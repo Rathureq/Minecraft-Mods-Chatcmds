@@ -128,6 +128,7 @@ public class ChatCmdsClient implements ClientModInitializer {
                 String who = firstWord(args);
                 say(who == null ? "I love metal at " + p + "%"
                                 : who + " loves metal at " + p + "%");
+            }
             case "!credit" -> {
                 touch(key, now);
                 say("Mod made by Rathureq in 26.2, Github : Rathureq");
