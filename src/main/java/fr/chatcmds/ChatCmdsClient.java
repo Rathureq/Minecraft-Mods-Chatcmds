@@ -173,7 +173,11 @@ public class ChatCmdsClient implements ClientModInitializer {
     /** Message visible uniquement par toi (diagnostic / erreurs). */
     static void local(String msg) {
         Minecraft mc = Minecraft.getInstance();
-        mc.execute(() -> mc.gui.getChat().addMessage(Component.literal("[chatcmds] " + msg)));
+        mc.execute(() -> {
+            if (mc.player != null) {
+                mc.player.sendSystemMessage(Component.literal("[chatcmds] " + msg));
+            }
+        });
     }
 
     /** Envoie un message dans le chat public (toujours sur le thread principal). */
