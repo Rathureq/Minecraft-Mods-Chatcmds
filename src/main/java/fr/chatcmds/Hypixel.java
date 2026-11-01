@@ -116,16 +116,29 @@ public class Hypixel {
     static void completions(int floor) throws Exception {
         Profile p = loadProfile();
         if (p == null) return;
-        int x = 0;
-        JsonObject cata = cataObject(p.member());
-        if (cata != null && cata.has("tier_completions")) {
-            JsonObject tc = cata.getAsJsonObject("tier_completions");
-            if (tc.has(String.valueOf(floor))) {
-                x = (int) Math.round(tc.get(String.valueOf(floor)).getAsDouble());
-            }
+        int normal = completionsOf(cataObject(p.member()), floor);
+        int master = completionsOf(masterObject(p.member()), floor);
+        // Collection de boss : un run normal compte 1, un run master compte 2.
+        int x = normal + 2 * master;
+        int missingRuns = Math.max(0, (1000 - x + 1) / 2); // arrondi au run supérieur
+        int pct = Math.min(100, x * 100 / 1000);
+        ChatCmdsClient.say("F" + floor + " collection : " + x + "/1000 (" + pct + "%), missing : "
+                + missingRuns + " master runs (M" + floor + ")");
+    }
+
+    private static int completionsOf(JsonObject dungeon, int floor) {
+        if (dungeon != null && dungeon.has("tier_completions")) {
+            JsonObject tc = dungeon.getAsJsonObject("tier_completions");
+            String f = String.valueOf(floor);
+            if (tc.has(f)) return (int) Math.round(tc.get(f).getAsDouble());
         }
-        int missing = Math.max(0, Math.floorDiv(1000 - x, 2));
-        ChatCmdsClient.say(x + "/1000, missing : " + missing + " m" + floor);
+        return 0;
+    }
+
+    private static JsonObject masterObject(JsonObject member) {
+        if (!member.has("dungeons")) return null;
+        JsonObject types = member.getAsJsonObject("dungeons").getAsJsonObject("dungeon_types");
+        return types == null ? null : types.getAsJsonObject("master_catacombs");
     }
 
     private static JsonObject cataObject(JsonObject member) {
@@ -194,25 +207,25 @@ public class Hypixel {
     static void bestTime(int floor) throws Exception {
         Profile p = loadProfile();
         if (p == null) return;
-        JsonObject cata = cataObject(p.member());
+        JsonObject master = masterObject(p.member());
         String f = String.valueOf(floor);
         String label = "S+";
-        double ms = timeOf(cata, "fastest_time_s_plus", f);
+        double ms = timeOf(master, "fastest_time_s_plus", f);
         if (ms <= 0) {
-            ms = timeOf(cata, "fastest_time_s", f);
+            ms = timeOf(master, "fastest_time_s", f);
             label = "S";
         }
         if (ms <= 0) {
-            ms = timeOf(cata, "fastest_time", f);
+            ms = timeOf(master, "fastest_time", f);
             label = "";
         }
         if (ms <= 0) {
-            ChatCmdsClient.say("PB F" + floor + " : aucun temps");
+            ChatCmdsClient.say("PB M" + floor + " : aucun temps");
             return;
         }
         long sec = Math.round(ms / 1000);
         String t = (sec / 60) + ":" + String.format("%02d", sec % 60);
-        ChatCmdsClient.say("PB F" + floor + (label.isEmpty() ? "" : " (" + label + ")") + " : " + t);
+        ChatCmdsClient.say("PB M" + floor + (label.isEmpty() ? "" : " (" + label + ")") + " : " + t);
     }
 
     private static double timeOf(JsonObject cata, String field, String floor) {
@@ -318,8 +331,11 @@ public class Hypixel {
             ChatCmdsClient.local("Inflation : données Bazaar indisponibles");
             return;
         }
-        double div = Config.inflationDivisor > 0 ? Config.inflationDivisor : totalW;
-        ChatCmdsClient.say("Inflation actuelle : " + String.format(Locale.US, "%.2f", sum / div));
+        if (Config.inflationDivisor > 0) {
+            ChatCmdsClient.say("Inflation (indice) : " + String.format(Locale.US, "%.2f", sum / Config.inflationDivisor));
+        } else {
+            ChatCmdsClient.say("Inflation : prix moyen du panier = " + fmt(sum / totalW) + " coins");
+        }
     }
 
     static String fmt(double v) {
