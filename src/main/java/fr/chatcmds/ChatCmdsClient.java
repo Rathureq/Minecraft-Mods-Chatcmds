@@ -67,8 +67,8 @@ public class ChatCmdsClient implements ClientModInitializer {
                 touch(key, now);
                 int cm = ThreadLocalRandom.current().nextInt(6, 23); // 6..22 inclus
                 String who = firstWord(args);
-                say(who == null ? "Mon paf fait " + cm + " cm"
-                                : "Le paf de " + who + " fait " + cm + " cm");
+                say(who == null ? "Mon paff fait " + cm + " cm"
+                                : "Le paff de " + who + " fait " + cm + " cm");
             }
             case "!roast" -> {
                 touch(key, now);
