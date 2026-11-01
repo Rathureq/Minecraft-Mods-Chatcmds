@@ -111,7 +111,7 @@ public class ChatCmdsClient implements ClientModInitializer {
             }
             case "!music" -> {
                 touch(key, now);
-                say("Best music ever : Bad Omen https://open.spotify.com/intl-fr/artist/3Ri4H12KFyu98LMjSoij5V");
+                say("Best music ever : Bad Omen");
             }
             case "!angrelin" -> {
                 touch(key, now);
@@ -121,6 +121,10 @@ public class ChatCmdsClient implements ClientModInitializer {
             case "!kayoux" -> {
                 touch(key, now);
                 say("KAYOUX");
+            }
+            case "!credit" -> {
+                touch(key, now);
+                say("Mod made by Rathureq in 26.2, Github : Rathureq");
             }
             case "!mp" -> {
                 touch(key, now);
