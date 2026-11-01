@@ -124,7 +124,7 @@ public class ChatCmdsClient implements ClientModInitializer {
             }
             case "!metal" -> {
                 touch(key, now);
-                int p = ThreadLocalRandom.current().nextInt(1, 101)
+                int p = ThreadLocalRandom.current().nextInt(1, 101);
                 String who = firstWord(args);
                 say(who == null ? "I love metal at " + p + "%"
                                 : who + " loves metal at " + p + "%");
