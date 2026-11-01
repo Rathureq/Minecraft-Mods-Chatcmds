@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "chatcmds",
+  "version": "${version}",
+  "name": "Chat Commands",
+  "description": "Répond automatiquement aux commandes !x tapées dans le chat (!paff, !comp1-7, !math, !pchim).",
+  "authors": ["Arthur"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["fr.chatcmds.ChatCmdsClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~26.2",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}
