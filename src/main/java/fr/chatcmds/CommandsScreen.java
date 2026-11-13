@@ -57,7 +57,7 @@ final class CommandsScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-        this.extractBackground(graphics, mouseX, mouseY, delta);
+        // super draws the background (blurred once) and the buttons: do not draw the background twice.
         super.extractRenderState(graphics, mouseX, mouseY, delta);
 
         graphics.text(this.font, "Chat Commands  (page " + (page + 1) + "/" + pages + ")", 10, 10, TITLE);
