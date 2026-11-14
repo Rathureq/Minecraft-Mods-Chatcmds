@@ -1,5 +1,8 @@
 package fr.chatcmds;
 
+import java.util.Collection;
+import java.util.Locale;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /** Small text helpers (no Minecraft dependency). */
@@ -32,6 +35,23 @@ final class Text {
         String m = sb.toString().replaceFirst("^[/!\\s]+", "").trim();
         if (m.length() > CHAT_MAX) m = m.substring(0, CHAT_MAX - 3) + "...";
         return m;
+    }
+
+    /**
+     * Masks the given whole words (case-insensitive) with their first letter followed by asterisks,
+     * for example "cocaine" becomes "c******". Used to get past the Hypixel chat filter.
+     */
+    static String censor(String s, Collection<String> words) {
+        if (s == null) return "";
+        String out = s;
+        for (String w : words) {
+            if (w == null || w.length() < 2) continue;
+            Pattern p = Pattern.compile("(?<![\\p{L}\\p{N}])" + Pattern.quote(w) + "(?![\\p{L}\\p{N}])",
+                    Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+            out = p.matcher(out).replaceAll(m ->
+                    Matcher.quoteReplacement(m.group().charAt(0) + "*".repeat(m.group().length() - 1)));
+        }
+        return out;
     }
 
     /** First word of an argument string if it looks like a Minecraft name, otherwise null. */

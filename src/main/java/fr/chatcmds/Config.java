@@ -25,6 +25,14 @@ final class Config {
     /** "cm" or "inch" (used by !paff). */
     static volatile String unit = "cm";
     private static final Set<String> MUTED = ConcurrentHashMap.newKeySet();
+    /** Starter list (a guess: Hypixel's filter is private). Added with /cc censor defaults. */
+    static final java.util.List<String> DEFAULT_CENSORED = java.util.List.of(
+            "cocaine", "heroin", "meth", "methamphetamine", "porn", "sex", "rape", "suicide",
+            "fuck", "fucking", "fucked", "fucker", "shit", "bullshit", "bitch", "cunt", "dick",
+            "pussy", "whore", "slut");
+
+    /** Words masked in every message the mod sends (Hypixel chat filter). */
+    private static final Set<String> CENSORED = ConcurrentHashMap.newKeySet();
 
     /** Returns the UUID of the logged-in player (set by the mod entrypoint). */
     static volatile Supplier<String> uuidSupplier = () -> null;
@@ -42,6 +50,7 @@ final class Config {
         try {
             if (file == null) return;
             if (!Files.exists(file)) {
+                CENSORED.add("cocaine");
                 save();
                 return;
             }
@@ -58,6 +67,14 @@ final class Config {
                     for (JsonElement e : o.getAsJsonArray("muted")) {
                         MUTED.add(e.getAsString().toLowerCase(Locale.ROOT));
                     }
+                }
+                CENSORED.clear();
+                if (o.has("censored") && o.get("censored").isJsonArray()) {
+                    for (JsonElement e : o.getAsJsonArray("censored")) {
+                        CENSORED.add(e.getAsString().toLowerCase(Locale.ROOT));
+                    }
+                } else {
+                    CENSORED.add("cocaine");
                 }
             }
             loadedMtime = Files.getLastModifiedTime(file).toMillis();
@@ -78,6 +95,9 @@ final class Config {
             JsonArray muted = new JsonArray();
             for (String m : new TreeSet<>(MUTED)) muted.add(m);
             o.add("muted", muted);
+            JsonArray censored = new JsonArray();
+            for (String w : new TreeSet<>(CENSORED)) censored.add(w);
+            o.add("censored", censored);
             Files.createDirectories(file.getParent());
             Files.writeString(file, GSON.toJson(o));
             loadedMtime = Files.getLastModifiedTime(file).toMillis();
@@ -112,6 +132,29 @@ final class Config {
         boolean removed = MUTED.remove(name.toLowerCase(Locale.ROOT));
         save();
         return removed;
+    }
+
+    static void censorAdd(String word) {
+        CENSORED.add(word.toLowerCase(Locale.ROOT));
+        save();
+    }
+
+    /** Adds the starter list. Returns how many words were new. */
+    static int censorAddDefaults() {
+        int added = 0;
+        for (String w : DEFAULT_CENSORED) if (CENSORED.add(w)) added++;
+        save();
+        return added;
+    }
+
+    static boolean censorRemove(String word) {
+        boolean removed = CENSORED.remove(word.toLowerCase(Locale.ROOT));
+        save();
+        return removed;
+    }
+
+    static Set<String> censored() {
+        return new TreeSet<>(CENSORED);
     }
 
     static Set<String> muted() {

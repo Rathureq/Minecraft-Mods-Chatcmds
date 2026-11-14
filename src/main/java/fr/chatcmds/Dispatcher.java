@@ -19,6 +19,7 @@ final class Dispatcher {
      */
     static final Pattern CHAT_LINE = Pattern.compile(
             "^(?:(?:Guild|Party|Co-op|From|To) > )?(?:\\[[^\\]]+\\] ?)*(\\w{1,16})(?: \\[[^\\]]+\\])?: (!\\S.*)$");
+    private static final Pattern BLOCKED = Pattern.compile("^We blocked your comment \"(.*)\" because");
     private static final Pattern LASTFM_USER = Pattern.compile("[A-Za-z][A-Za-z0-9_-]{1,14}");
 
     /** Minimum delay between two answers to the same command. */
@@ -72,6 +73,12 @@ final class Dispatcher {
     /** Called for every incoming chat or system line. */
     void onMessage(String raw) {
         String text = Text.plain(raw);
+        if (text.startsWith("We blocked your comment")) {
+            Matcher b = BLOCKED.matcher(text);
+            out.local("Hypixel blocked" + (b.find() ? " : \"" + b.group(1) + "\"" : " one of your messages")
+                    + ". Find the word that triggered the filter and hide it with /cc censor add <word>.");
+            return;
+        }
         PartyRoles.observe(text);
         Matcher m = CHAT_LINE.matcher(text);
         if (m.matches()) handle(m.group(1), m.group(2));

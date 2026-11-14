@@ -8,7 +8,7 @@ final class Chat implements Out {
 
     @Override
     public void say(String message) {
-        String m = Text.sanitize(message);
+        String m = Text.sanitize(Text.censor(message, Config.censored()));
         if (m.isEmpty()) return;
         Minecraft mc = Minecraft.getInstance();
         mc.execute(() -> {

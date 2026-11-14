@@ -182,6 +182,40 @@ final class CcCommands {
             return 1;
         })));
 
+        // /cc censor ...
+        LiteralArgumentBuilder<FabricClientCommandSource> censor = ClientCommands.literal("censor");
+        censor.then(ClientCommands.literal("add").then(ClientCommands.argument("word", StringArgumentType.word())
+                .executes(c -> {
+                    String w = StringArgumentType.getString(c, "word");
+                    if (w.length() < 2) {
+                        chat.local("The word must have at least 2 letters.");
+                        return 0;
+                    }
+                    Config.censorAdd(w);
+                    chat.local("\"" + w + "\" will be sent as " + Text.censor(w, List.of(w)) + ".");
+                    return 1;
+                })));
+        censor.then(ClientCommands.literal("remove").then(ClientCommands.argument("word", StringArgumentType.word())
+                .suggests(suggest(c -> List.copyOf(Config.censored())))
+                .executes(c -> {
+                    String w = StringArgumentType.getString(c, "word");
+                    chat.local(Config.censorRemove(w) ? "\"" + w + "\" is no longer masked."
+                            : "\"" + w + "\" was not in the list.");
+                    return 1;
+                })));
+        censor.then(ClientCommands.literal("list").executes(c -> {
+            chat.local("Masked words : " + (Config.censored().isEmpty() ? "none"
+                    : String.join(", ", Config.censored())));
+            return 1;
+        }));
+        censor.then(ClientCommands.literal("defaults").executes(c -> {
+            int n = Config.censorAddDefaults();
+            chat.local(n + " word(s) added to the masked list. See them with /cc censor list, "
+                    + "remove one with /cc censor remove <word>.");
+            return 1;
+        }));
+        cc.then(censor);
+
         // /cc rng ...
         LiteralArgumentBuilder<FabricClientCommandSource> rng = ClientCommands.literal("rng");
         rng.then(ClientCommands.literal("list").executes(c -> {
@@ -234,7 +268,7 @@ final class CcCommands {
         chat.local("gui  status  reload  key <hypixel key>  lastfmkey <key>  link <lastfm user>");
         chat.local("unit <cm|inch>  mute <player>  unmute <player>");
         chat.local("add <name> <response>  remove <name>  list   (" + CustomCommands.HELP + ")");
-        chat.local("rng list|add|remove  find <text>  inflation reset   |   also: /dh  /rng");
+        chat.local("censor add|remove|list|defaults  rng list|add|remove  find <text>  inflation reset   |   also: /dh  /rng");
         return 1;
     }
 
@@ -243,6 +277,7 @@ final class CcCommands {
         chat.local("Last.fm API key : " + Config.mask(Config.lastfmKey)
                 + ", account : " + (Config.lastfmUser.isEmpty() ? "not linked" : Config.lastfmUser));
         chat.local("!paff unit : " + Config.unit);
+        chat.local("Masked words : " + (Config.censored().isEmpty() ? "none" : String.join(", ", Config.censored())));
         chat.local("Muted players : " + (Config.muted().isEmpty() ? "none" : String.join(", ", Config.muted())));
         chat.local("Custom commands : " + CustomCommands.all().size() + ", RNG entries : " + Rng.all().size());
         return 1;
