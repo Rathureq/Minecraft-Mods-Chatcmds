@@ -1,7 +1,7 @@
 # Chat Commands
 
 A client-side [Fabric](https://fabricmc.net) mod for **Minecraft 26.2** (made for Hypixel SkyBlock).
-When any player writes a command starting with `!` in the chat (`!paff`, `!pchim`, `!comp1`...), the mod
+When any player writes a command starting with `!` in the chat (`!pb7`, `!pchim`, `!comp1`...), the mod
 answers in the public chat with your account. You can also create your own commands in game, browse
 all commands in a GUI, and link a Last.fm account to share the song you are listening to.
 
@@ -41,7 +41,6 @@ Anyone can use them (the answers come from **your** account, stats are **yours**
 
 | Command | Answer |
 |---|---|
-| `!paff [name]` | Random size, 6 to 22 cm (the only command that answers in French) |
 | `!math <expr>` | Calculator: `+ - * / % ^` and parentheses. Try `!math 10^300` |
 | `!pchim` | Chimera I Bazaar prices (insta buy / insta sell) |
 | `!precomb` | Recombobulator 3000 Bazaar prices |
@@ -62,7 +61,7 @@ Anyone can use them (the answers come from **your** account, stats are **yours**
 
 | Command | Effect |
 |---|---|
-| `!cm-inch cm\|inch` | Unit used by `!paff` |
+| `!cm-inch cm\|inch` | Change unit for the account |
 | `!link <lastfm user>` | Link your Last.fm account (same as `/cc link`, but visible in the chat) |
 | `!mute <player>` | Ignore all the commands of this player. Does not work on yourself |
 | `!unmute <player>` | Stop ignoring them |
