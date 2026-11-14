@@ -44,6 +44,8 @@ Anyone can use them (the answers come from **your** account, stats are **yours**
 | `!math <expr>` | Calculator: `+ - * / % ^` and parentheses. Try `!math 10^300` |
 | `!pchim` | Chimera I Bazaar prices (insta buy / insta sell) |
 | `!precomb` | Recombobulator 3000 Bazaar prices |
+| `!pcookie` | Booster Cookie Bazaar prices |
+| `!pkismet` | Kismet Feather Bazaar prices |
 | `!phandle` | Lowest BIN price of Necron's Handle (first call can take several seconds) |
 | `!inflation` | Price index of the old *Consumer Inflation Index* basket, base 100 (see below) |
 | `!comp1` ... `!comp7` | Boss collection of the floor (normal run = 1, master run = 2) and master runs missing for 1000 |
