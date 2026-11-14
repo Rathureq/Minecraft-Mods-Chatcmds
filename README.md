@@ -89,7 +89,7 @@ Each command has a 3 second cooldown to avoid spam.
 | `/cc list` | Lists your custom commands |
 | `/cc unit <cm\|inch>`, `/cc mute <player>`, `/cc unmute <player>` | Same as the owner-only chat commands |
 | `/cc censor add\|remove\|list <word>` | Words the mod masks in its answers (`cocaine` is sent as `c******`), to get past the Hypixel chat filter. Whole words only |
-| `/cc censor defaults` | Adds a starter list of words that filters often block (drugs, swear words). It is a guess: Hypixel's filter is private |
+| `/cc censor defaults` | Re-adds the starter list (drugs, sexual and swear words, violence), which is also loaded on the first start. It is a guess: Hypixel's filter is private |
 | `/cc alias <name> <command>` | Shortcut: `/cc alias !p !pcookie` makes `!p` run `!pcookie`. Extra words are kept: `/cc alias !k pprice kismet`. Also `/cc alias list` and `/cc alias remove <name>` |
 | `/cc reload` | Reloads the config files |
 | `/cc rng select <drop>`, `/cc rng score <category> <value>` | Set your selected drop / stored score by hand (Tab completes) |
