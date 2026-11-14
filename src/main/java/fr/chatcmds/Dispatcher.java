@@ -80,6 +80,7 @@ final class Dispatcher {
             return;
         }
         PartyRoles.observe(text);
+        Rng.observe(text);
         Matcher m = CHAT_LINE.matcher(text);
         if (m.matches()) handle(m.group(1), m.group(2));
     }
@@ -183,12 +184,8 @@ final class Dispatcher {
     // ---- !rng ----
 
     private void rng(String args) {
-        String[] a = args.isBlank() ? new String[0] : args.split("\\s+");
-        if (a.length < 3) {
-            out.local("Usage : !rng <category> <option> <drop>   (see /cc rng list)");
-            return;
-        }
-        async(out, () -> Rng.run(a[0], a[1], a[2], out));
+        String token = args.isBlank() ? null : args.trim().split("\\s+")[0];
+        async(out, () -> Rng.run(token, out));
     }
 
     // ---- owner-only commands (the answer is shown only to you) ----

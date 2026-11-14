@@ -19,7 +19,7 @@ import java.util.function.Function;
  * Client-side slash commands. They never leave your computer (they are not sent to the server).
  *
  *   /dh                                  -> /warp dh
- *   /rng <category> <option> <drop>      -> same as !rng, with tab completion
+ *   /rng [drop]                          -> same as !rng, with tab completion on the drops
  *   /cc ...                              -> settings, custom commands, GUI
  */
 final class CcCommands {
@@ -37,23 +37,18 @@ final class CcCommands {
     // ---------- /rng ----------
 
     private static LiteralArgumentBuilder<FabricClientCommandSource> rngCommand(Chat chat) {
-        SuggestionProvider<FabricClientCommandSource> cats = suggest(c -> Rng.categories());
-        SuggestionProvider<FabricClientCommandSource> opts = suggest(c ->
-                Rng.options(StringArgumentType.getString(c, "category")));
-        SuggestionProvider<FabricClientCommandSource> drops = suggest(c ->
-                Rng.drops(StringArgumentType.getString(c, "category"), StringArgumentType.getString(c, "option")));
-
+        SuggestionProvider<FabricClientCommandSource> drops = suggest(c -> Rng.tokens());
         return ClientCommands.literal("rng")
-                .then(ClientCommands.argument("category", StringArgumentType.word()).suggests(cats)
-                        .then(ClientCommands.argument("option", StringArgumentType.word()).suggests(opts)
-                                .then(ClientCommands.argument("drop", StringArgumentType.word()).suggests(drops)
-                                        .executes(c -> {
-                                            String cat = StringArgumentType.getString(c, "category");
-                                            String opt = StringArgumentType.getString(c, "option");
-                                            String drop = StringArgumentType.getString(c, "drop");
-                                            Dispatcher.async(chat, () -> Rng.run(cat, opt, drop, chat));
-                                            return 1;
-                                        }))));
+                .executes(c -> {
+                    Dispatcher.async(chat, () -> Rng.run(null, chat));
+                    return 1;
+                })
+                .then(ClientCommands.argument("drop", StringArgumentType.word()).suggests(drops)
+                        .executes(c -> {
+                            String drop = StringArgumentType.getString(c, "drop");
+                            Dispatcher.async(chat, () -> Rng.run(drop, chat));
+                            return 1;
+                        }));
     }
 
     // ---------- /cc ----------
@@ -218,44 +213,26 @@ final class CcCommands {
 
         // /cc rng ...
         LiteralArgumentBuilder<FabricClientCommandSource> rng = ClientCommands.literal("rng");
-        rng.then(ClientCommands.literal("list").executes(c -> {
-            List<Rng.Entry> all = Rng.all();
-            if (all.isEmpty()) {
-                chat.local("No RNG entry yet. Add one with /cc rng add <category> <option> <drop> <required> <path>");
-                return 1;
-            }
-            for (Rng.Entry e : all) {
-                chat.local(e.category() + " " + e.option() + " " + e.drop() + "  (" + e.required()
-                        + " req, path " + e.path() + ")");
-            }
-            return 1;
-        }));
-        rng.then(ClientCommands.literal("add")
+        SuggestionProvider<FabricClientCommandSource> dropList = suggest(c -> Rng.tokens());
+        rng.then(ClientCommands.literal("select")
+                .then(ClientCommands.argument("drop", StringArgumentType.word()).suggests(dropList)
+                        .executes(c -> {
+                            String d = StringArgumentType.getString(c, "drop");
+                            chat.local(Rng.select(d) ? "Selected drop : " + d
+                                    : "Unknown drop. Press Tab to list them.");
+                            return 1;
+                        })));
+        rng.then(ClientCommands.literal("score")
                 .then(ClientCommands.argument("category", StringArgumentType.word())
-                        .then(ClientCommands.argument("option", StringArgumentType.word())
-                                .then(ClientCommands.argument("drop", StringArgumentType.word())
-                                        .then(ClientCommands.argument("required", LongArgumentType.longArg(1))
-                                                .then(ClientCommands.argument("path", StringArgumentType.word())
-                                                        .executes(c -> {
-                                                            Rng.add(StringArgumentType.getString(c, "category"),
-                                                                    StringArgumentType.getString(c, "option"),
-                                                                    StringArgumentType.getString(c, "drop"),
-                                                                    LongArgumentType.getLong(c, "required"),
-                                                                    StringArgumentType.getString(c, "path"));
-                                                            chat.local("RNG entry saved.");
-                                                            return 1;
-                                                        })))))));
-        rng.then(ClientCommands.literal("remove")
-                .then(ClientCommands.argument("category", StringArgumentType.word())
-                        .then(ClientCommands.argument("option", StringArgumentType.word())
-                                .then(ClientCommands.argument("drop", StringArgumentType.word())
-                                        .executes(c -> {
-                                            boolean ok = Rng.remove(StringArgumentType.getString(c, "category"),
-                                                    StringArgumentType.getString(c, "option"),
-                                                    StringArgumentType.getString(c, "drop"));
-                                            chat.local(ok ? "RNG entry removed." : "No such RNG entry.");
-                                            return 1;
-                                        })))));
+                        .suggests(suggest(c -> Rng.tokens().stream().map(t -> t.substring(0, t.indexOf('_')))
+                                .distinct().toList()))
+                        .then(ClientCommands.argument("value", LongArgumentType.longArg(0))
+                                .executes(c -> {
+                                    Rng.setScore(StringArgumentType.getString(c, "category").toLowerCase(Locale.ROOT),
+                                            LongArgumentType.getLong(c, "value"));
+                                    chat.local("Score saved.");
+                                    return 1;
+                                }))));
         cc.then(rng);
 
         return cc;
@@ -268,7 +245,7 @@ final class CcCommands {
         chat.local("gui  status  reload  key <hypixel key>  lastfmkey <key>  link <lastfm user>");
         chat.local("unit <cm|inch>  mute <player>  unmute <player>");
         chat.local("add <name> <response>  remove <name>  list   (" + CustomCommands.HELP + ")");
-        chat.local("censor add|remove|list|defaults  rng list|add|remove  find <text>  inflation reset   |   also: /dh  /rng");
+        chat.local("censor add|remove|list|defaults  rng select|score  find <text>  inflation reset   |   also: /dh  /rng");
         return 1;
     }
 
@@ -279,7 +256,7 @@ final class CcCommands {
         chat.local("!paff unit : " + Config.unit);
         chat.local("Masked words : " + (Config.censored().isEmpty() ? "none" : String.join(", ", Config.censored())));
         chat.local("Muted players : " + (Config.muted().isEmpty() ? "none" : String.join(", ", Config.muted())));
-        chat.local("Custom commands : " + CustomCommands.all().size() + ", RNG entries : " + Rng.all().size());
+        chat.local("Custom commands : " + CustomCommands.all().size() + ", selected RNG drop : " + (Rng.selected().isEmpty() ? "none" : Rng.selected()));
         return 1;
     }
 

@@ -53,7 +53,7 @@ Anyone can use them (the answers come from **your** account, stats are **yours**
 | `!sblvl` | SkyBlock level |
 | `!mp` | Magical Power |
 | `!role` | Class and class level of the Party Finder members |
-| `!rng <category> <option> <drop>` | RNG meter progress: `x rng / x req, x% fill` (see below) |
+| `!rng [drop]` | Fill rate of your selected RNG meter drop: `x rng / x req, x% fill` (see below) |
 | `!playing_music` | Song you are playing right now (Last.fm) |
 | `!music`, `!kayoux`, `!angrelin`, `!roast [name]`, `!metal [name]`, `!credit` | Fun commands |
 
@@ -79,11 +79,13 @@ Each command has a 3 second cooldown to avoid spam.
 | `/cc remove <name>` | Deletes a custom command |
 | `/cc list` | Lists your custom commands |
 | `/cc unit <cm\|inch>`, `/cc mute <player>`, `/cc unmute <player>` | Same as the owner-only chat commands |
+| `/cc censor add\|remove\|list <word>` | Words the mod masks in its answers (`cocaine` is sent as `c******`), to get past the Hypixel chat filter. Whole words only |
+| `/cc censor defaults` | Adds a starter list of words that filters often block (drugs, swear words). It is a guess: Hypixel's filter is private |
 | `/cc reload` | Reloads the config files |
-| `/cc rng list\|add\|remove` | Manages the RNG entries |
+| `/cc rng select <drop>`, `/cc rng score <category> <value>` | Set your selected drop / stored score by hand (Tab completes) |
 | `/cc find <text>` | Looks for a key in your SkyBlock profile (helps to set up `!rng`) |
 | `/cc inflation reset` | Makes today the new base 100 of `!inflation` |
-| `/rng <category> <option> <drop>` | Same as `!rng`, with tab completion |
+| `/rng [drop]` | Same as `!rng`, with tab completion on all drops |
 
 ## Custom commands
 
@@ -112,19 +114,19 @@ or `!` and never sends more than 256 characters.
 
 ## RNG meter (`!rng`)
 
-`!rng <category> <option> <drop>` answers `x rng / x req, x% fill`. The mod needs to know, for each drop,
-how many points are required and where your current score is stored in your SkyBlock profile, so the entries
-are defined by you:
+`!rng` answers the fill rate of your **selected** drop, for example
+`Bonzo Staff (f1) : 15,900 rng / 31,800 req, 50% fill`. `!rng <drop>` (or `/rng <drop>`) does the same for any drop.
+The mod ships the list of drops and required scores of the Catacombs floors (F1-M7) and the six slayers
+(data from the NotEnoughUpdates repo, may change with game updates). A drop is written `<category>_<drop>`,
+for example `m7_necron_handle`, `f1_bonzo_staff`, `revenant_foul_flesh`. Press **Tab** after `/rng ` to list them.
 
-```
-/cc find rng                                                     # find where the score is stored
-/cc rng add slayer revenant scythe_blade 100000 slayer.slayer_bosses.zombie.some_key
-/rng slayer revenant scythe_blade                                # tab completion works from here
-```
+Where your selected drop and stored score come from (first found wins):
+1. your SkyBlock profile, if the Hypixel API exposes them (the mod searches for an "rng meter" object;
+   the layout is undocumented, so this may find nothing: check with `/cc find meter`);
+2. the `RNG Meter - 15,900 Stored Score/XP` line that Hypixel prints after a run or a slayer boss;
+3. what you saved by hand: `/cc rng select <drop>` and `/cc rng score <category> <value>`.
 
-Use `_` instead of spaces in names. Entries are saved in `config/chatcmds-rng.json`.
-The mod ships **without** entries because the required scores and the profile fields must come from you
-(they change with game updates).
+Select your drop once with `/cc rng select m7_necron_handle`; the score then follows the chat line after each run.
 
 ## Inflation
 
@@ -143,9 +145,9 @@ All in `.minecraft/config/`:
 
 | File | Content |
 |---|---|
-| `chatcmds.json` | Keys, Last.fm account, unit, muted players |
+| `chatcmds.json` | Keys, Last.fm account, unit, muted players, masked words |
 | `chatcmds-commands.json` | Your custom commands |
-| `chatcmds-rng.json` | Your RNG entries |
+| `chatcmds-rng.json` | Selected RNG drop and stored scores |
 | `chatcmds-data.json` | Inflation base and history |
 
 Manual edits of `chatcmds.json` are picked up automatically.
@@ -175,4 +177,4 @@ To build on your computer: JDK 25 and Gradle 9.5 or newer, then `gradle build`; 
 | Nothing happens | Check `/cc status`; errors are shown only to you, prefixed with `[chatcmds]` |
 | A command is slow | `!phandle` reads the whole Auction House the first time (then cached for 60 s) |
 | `!playing_music` says nothing is playing | Spotify must scrobble to Last.fm and the account must be public |
-| A message is not sent | Hypixel chat filter (for example links). Rephrase the response |
+| A message is not sent, or `We blocked your comment` | Hypixel chat filter (links, adult words, song titles...). The mod warns you in your chat. Mask the word with `/cc censor add <word>` |

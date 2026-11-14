@@ -27,7 +27,7 @@ final class BuiltIns {
         add("sblvl", "SkyBlock level", false, "sblvl");
         add("mp", "Magical Power", false, "mp");
         add("role", "Classes of the Party Finder members", false, "role");
-        add("rng <cat> <opt> <drop>", "RNG meter progress (set up with /cc rng)", false, "rng");
+        add("rng [drop]", "RNG meter fill of your selected drop (or of the given drop)", false, "rng");
         add("playing_music", "Song playing right now (Last.fm)", false, "playing_music");
         add("music", "Best music ever", false, "music");
         add("roast [name]", "Random roast", false, "roast");
