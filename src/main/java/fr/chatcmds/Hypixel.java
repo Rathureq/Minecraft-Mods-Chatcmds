@@ -5,6 +5,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
@@ -25,8 +28,7 @@ final class Hypixel {
     private static Profile profileCache;
     private static String profileFor = "";
     private static long profileAt;
-    private static String handleMsg;
-    private static long handleAt;
+    private static final Map<String, String[]> binCache = new HashMap<>();
 
     private Hypixel() {}
 
@@ -34,7 +36,7 @@ final class Hypixel {
     static synchronized void invalidate() {
         bazaarCache = null;
         profileCache = null;
-        handleMsg = null;
+        binCache.clear();
     }
 
     // ---------- Bazaar ----------
@@ -227,9 +229,16 @@ final class Hypixel {
     // ---------- Auction House ----------
 
     static void necronHandle(Out out) throws Exception {
+        lowestBin("Necron's Handle", out);
+    }
+
+    /** Lowest BIN of an item whose name contains the text (case-insensitive). Cached 60 s per query. */
+    static void lowestBin(String query, Out out) throws Exception {
+        String q = query.trim().toLowerCase(Locale.ROOT);
         synchronized (Hypixel.class) {
-            if (handleMsg != null && System.currentTimeMillis() - handleAt < AH_TTL) {
-                out.say(handleMsg);
+            String[] c = binCache.get(q);
+            if (c != null && System.currentTimeMillis() - Long.parseLong(c[1]) < AH_TTL) {
+                out.say(c[0]);
                 return;
             }
         }
@@ -239,30 +248,34 @@ final class Hypixel {
 
         ExecutorService pool = Executors.newFixedThreadPool(8);
         try {
-            List<CompletableFuture<Double>> futures = new ArrayList<>();
-            futures.add(CompletableFuture.completedFuture(lowestHandle(first)));
+            List<CompletableFuture<Object[]>> futures = new ArrayList<>();
+            futures.add(CompletableFuture.completedFuture(lowestIn(first, q)));
             for (int i = 1; i < pages; i++) {
                 final int page = i;
                 futures.add(CompletableFuture.supplyAsync(() -> {
                     try {
-                        return lowestHandle(Http.getJson(
+                        return lowestIn(Http.getJson(
                                 "https://api.hypixel.net/v2/skyblock/auctions?page=" + page,
-                                null, null, "Hypixel").getAsJsonObject());
+                                null, null, "Hypixel").getAsJsonObject(), q);
                     } catch (Exception e) {
-                        return Double.MAX_VALUE;
+                        return new Object[] {Double.MAX_VALUE, ""};
                     }
                 }, pool));
             }
             double min = Double.MAX_VALUE;
-            for (CompletableFuture<Double> f : futures) {
-                min = Math.min(min, f.get(25, TimeUnit.SECONDS));
+            String name = "";
+            for (CompletableFuture<Object[]> f : futures) {
+                Object[] r = f.get(25, TimeUnit.SECONDS);
+                if ((Double) r[0] < min) {
+                    min = (Double) r[0];
+                    name = (String) r[1];
+                }
             }
             String msg = (min == Double.MAX_VALUE)
-                    ? "No Necron's Handle on sale (BIN) in the Auction House"
-                    : "Necron's Handle (BIN) : " + fmt(min);
+                    ? "No \"" + query.trim() + "\" on sale (BIN) in the Auction House"
+                    : cleanName(name) + " (BIN) : " + fmt(min);
             synchronized (Hypixel.class) {
-                handleMsg = msg;
-                handleAt = System.currentTimeMillis();
+                binCache.put(q, new String[] {msg, String.valueOf(System.currentTimeMillis())});
             }
             out.say(msg);
         } finally {
@@ -270,18 +283,107 @@ final class Hypixel {
         }
     }
 
-    private static double lowestHandle(JsonObject page) {
+    /** Keeps letters, digits, space and a few signs (drops star glyphs and similar). */
+    static String cleanName(String s) {
+        return s.replaceAll("[^\\p{L}\\p{N} '+\\-\\[\\]]", "").replaceAll("\\s+", " ").trim();
+    }
+
+    /** {lowest price, item name} among the BIN auctions of this page whose name contains q (lower-case). */
+    private static Object[] lowestIn(JsonObject page, String q) {
         double min = Double.MAX_VALUE;
+        String name = "";
         JsonArray auctions = page.getAsJsonArray("auctions");
-        if (auctions == null) return min;
+        if (auctions == null) return new Object[] {min, name};
         for (JsonElement e : auctions) {
             JsonObject a = e.getAsJsonObject();
             if (!a.has("bin") || !a.get("bin").getAsBoolean()) continue;
             if (a.has("claimed") && a.get("claimed").getAsBoolean()) continue;
-            if (!a.get("item_name").getAsString().contains("Necron's Handle")) continue;
-            min = Math.min(min, a.get("starting_bid").getAsDouble());
+            String n = a.get("item_name").getAsString();
+            if (!n.toLowerCase(Locale.ROOT).contains(q)) continue;
+            double price = a.get("starting_bid").getAsDouble();
+            if (price < min) {
+                min = price;
+                name = n;
+            }
         }
-        return min;
+        return new Object[] {min, name};
+    }
+
+    // ---------- !pprice : any Bazaar item ----------
+
+    private static final Map<String, String> BZ_ALIASES = Map.of(
+            "COOKIE", "BOOSTER_COOKIE", "KISMET", "KISMET_FEATHER", "CHIM", "ENCHANTMENT_ULTIMATE_CHIMERA_1",
+            "CHIMERA", "ENCHANTMENT_ULTIMATE_CHIMERA_1", "RECOMB", "RECOMBOBULATOR_3000",
+            "RECOMBOBULATOR", "RECOMBOBULATOR_3000");
+
+    /** Finds the Bazaar product id for what the player typed, or null. */
+    static String resolveBazaar(Set<String> ids, String text) {
+        String key = text.trim().toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]+", "_").replaceAll("^_|_$", "");
+        if (key.isEmpty()) return null;
+        if (BZ_ALIASES.containsKey(key)) return BZ_ALIASES.get(key);
+        if (ids.contains(key)) return key;
+        if (ids.contains("ENCHANTMENT_" + key)) return "ENCHANTMENT_" + key;
+        String[] words = key.split("_");
+        String best = null;
+        for (String id : ids) {
+            boolean all = true;
+            for (String w : words) {
+                if (!id.contains(w)) {
+                    all = false;
+                    break;
+                }
+            }
+            if (all && (best == null || id.length() < best.length())) best = id;
+        }
+        return best;
+    }
+
+    /** !pprice <item>: Bazaar price, or lowest BIN when the item is not in the Bazaar. */
+    static void price(String text, Out out) throws Exception {
+        if (text == null || text.isBlank()) {
+            out.local("Usage : !pprice <item>   (example : !pprice booster cookie)");
+            return;
+        }
+        if (text.trim().equalsIgnoreCase("handle")) {
+            necronHandle(out);
+            return;
+        }
+        JsonObject products = bazaarProducts();
+        String id = resolveBazaar(products.keySet(), text);
+        if (id == null) {
+            lowestBin(text, out);
+            return;
+        }
+        JsonObject q = products.getAsJsonObject(id).getAsJsonObject("quick_status");
+        out.say(Rng.pretty(id) + " : insta buy : " + fmt(q.get("buyPrice").getAsDouble())
+                + ", insta sell : " + fmt(q.get("sellPrice").getAsDouble()));
+    }
+
+    // ---------- !mayor ----------
+
+    static void mayor(Out out) throws Exception {
+        JsonObject root = Http.getJson("https://api.hypixel.net/v2/resources/skyblock/election", null, null, "Hypixel")
+                .getAsJsonObject();
+        JsonObject m = Json.obj(root, "mayor");
+        if (m == null) {
+            out.local("No mayor data.");
+            return;
+        }
+        StringBuilder sb = new StringBuilder("Mayor : ").append(Text.plain(m.get("name").getAsString()));
+        if (m.has("perks") && m.get("perks").isJsonArray()) {
+            List<String> perks = new ArrayList<>();
+            for (JsonElement e : m.getAsJsonArray("perks")) {
+                perks.add(Text.plain(e.getAsJsonObject().get("name").getAsString()));
+            }
+            if (!perks.isEmpty()) sb.append(" (").append(String.join(", ", perks)).append(")");
+        }
+        JsonObject min = Json.obj(m, "minister");
+        if (min != null && min.has("name")) {
+            sb.append(" | Minister : ").append(Text.plain(min.get("name").getAsString()));
+            JsonObject perk = Json.obj(min, "perk");
+            if (perk != null && perk.has("name")) sb.append(" (").append(Text.plain(perk.get("name").getAsString())).append(")");
+        }
+        out.say(sb.toString());
     }
 
     // ---------- /cc find : locate a field in your own profile ----------

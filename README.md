@@ -43,9 +43,16 @@ Anyone can use them (the answers come from **your** account, stats are **yours**
 |---|---|
 | `!math <expr>` | Calculator: `+ - * / % ^` and parentheses. Try `!math 10^300` |
 | `!pchim` | Chimera I Bazaar prices (insta buy / insta sell) |
-| `!precomb` | Recombobulator 3000 Bazaar prices |
+| `!pprice <item>` | Bazaar price of any item (`!pprice booster cookie`); if it is not in the Bazaar, the lowest BIN. Shortcuts: `cookie`, `kismet`, `chimera`, `recomb`, `handle` |
+| `!ah <item>` | Lowest BIN of an item whose name contains the text (`!ah necron's handle`), can take several seconds |
+| `!mayor` | Current mayor, his perks and the minister |
+| `!pets` | Active pet and its level |
+| `!skills` | Farming, mining, combat... levels and the average |
+| `!slayer` | Level and XP of the 6 slayers |
+| `!purse` | Coins in your purse |
 | `!pcookie` | Booster Cookie Bazaar prices |
 | `!pkismet` | Kismet Feather Bazaar prices |
+| `!precomb` | Recombobulator 3000 Bazaar prices |
 | `!phandle` | Lowest BIN price of Necron's Handle (first call can take several seconds) |
 | `!inflation` | Price index of the old *Consumer Inflation Index* basket, base 100 (see below) |
 | `!comp1` ... `!comp7` | Boss collection of the floor (normal run = 1, master run = 2) and master runs missing for 1000 |
@@ -83,6 +90,7 @@ Each command has a 3 second cooldown to avoid spam.
 | `/cc unit <cm\|inch>`, `/cc mute <player>`, `/cc unmute <player>` | Same as the owner-only chat commands |
 | `/cc censor add\|remove\|list <word>` | Words the mod masks in its answers (`cocaine` is sent as `c******`), to get past the Hypixel chat filter. Whole words only |
 | `/cc censor defaults` | Adds a starter list of words that filters often block (drugs, swear words). It is a guess: Hypixel's filter is private |
+| `/cc alias <name> <command>` | Shortcut: `/cc alias !p !pcookie` makes `!p` run `!pcookie`. Extra words are kept: `/cc alias !k pprice kismet`. Also `/cc alias list` and `/cc alias remove <name>` |
 | `/cc reload` | Reloads the config files |
 | `/cc rng select <drop>`, `/cc rng score <category> <value>` | Set your selected drop / stored score by hand (Tab completes) |
 | `/cc find <text>` | Looks for a key in your SkyBlock profile (helps to set up `!rng`) |
@@ -147,7 +155,7 @@ All in `.minecraft/config/`:
 
 | File | Content |
 |---|---|
-| `chatcmds.json` | Keys, Last.fm account, unit, muted players, masked words |
+| `chatcmds.json` | Keys, Last.fm account, unit, muted players, masked words, aliases |
 | `chatcmds-commands.json` | Your custom commands |
 | `chatcmds-rng.json` | Selected RNG drop and stored scores |
 | `chatcmds-data.json` | Inflation base and history |

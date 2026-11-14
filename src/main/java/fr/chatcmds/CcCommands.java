@@ -211,6 +211,51 @@ final class CcCommands {
         }));
         cc.then(censor);
 
+        // /cc alias ...
+        LiteralArgumentBuilder<FabricClientCommandSource> alias = ClientCommands.literal("alias");
+        alias.then(ClientCommands.literal("list").executes(c -> {
+            Map<String, String> all = Config.aliases();
+            if (all.isEmpty()) {
+                chat.local("No alias yet. Example : /cc alias !p !pcookie");
+                return 1;
+            }
+            for (Map.Entry<String, String> e : all.entrySet()) chat.local("!" + e.getKey() + " -> !" + e.getValue());
+            return 1;
+        }));
+        alias.then(ClientCommands.literal("remove")
+                .then(ClientCommands.argument("name", StringArgumentType.greedyString()).executes(c -> {
+                    String n = StringArgumentType.getString(c, "name").trim().replaceFirst("^!", "");
+                    chat.local(Config.aliasRemove(n) ? "Alias !" + n + " removed." : "No such alias.");
+                    return 1;
+                })));
+        alias.then(ClientCommands.argument("spec", StringArgumentType.greedyString()).executes(c -> {
+            // "<name> <command [args]>", with or without "!"
+            String[] p = StringArgumentType.getString(c, "spec").trim().split("\\s+", 2);
+            if (p.length < 2) {
+                chat.local("Usage : /cc alias <name> <command>   (example : /cc alias !p !pcookie)");
+                return 0;
+            }
+            String name = p[0].replaceFirst("^!", "").toLowerCase(Locale.ROOT);
+            String target = p[1].trim().replaceFirst("^!", "");
+            String targetCmd = target.split("\\s+")[0].toLowerCase(Locale.ROOT);
+            if (!name.matches("[A-Za-z0-9_-]{1,20}")) {
+                chat.local("The name must have 1 to 20 letters, digits, _ or -.");
+                return 0;
+            }
+            if (BuiltIns.find(name) != null || CustomCommands.get(name) != null) {
+                chat.local("!" + name + " already exists as a command.");
+                return 0;
+            }
+            if (BuiltIns.find(targetCmd) == null && CustomCommands.get(targetCmd) == null) {
+                chat.local("!" + targetCmd + " is not a command (aliases cannot point to another alias).");
+                return 0;
+            }
+            Config.aliasSet(name, target);
+            chat.local("Alias created : !" + name + " -> !" + target);
+            return 1;
+        }));
+        cc.then(alias);
+
         // /cc rng ...
         LiteralArgumentBuilder<FabricClientCommandSource> rng = ClientCommands.literal("rng");
         SuggestionProvider<FabricClientCommandSource> dropList = suggest(c -> Rng.tokens());
@@ -245,7 +290,7 @@ final class CcCommands {
         chat.local("gui  status  reload  key <hypixel key>  lastfmkey <key>  link <lastfm user>");
         chat.local("unit <cm|inch>  mute <player>  unmute <player>");
         chat.local("add <name> <response>  remove <name>  list   (" + CustomCommands.HELP + ")");
-        chat.local("censor add|remove|list|defaults  rng select|score  find <text>  inflation reset   |   also: /dh  /rng");
+        chat.local("censor add|remove|list|defaults  alias <name> <command>|list|remove  rng select|score  find <text>  inflation reset   |   also: /dh  /rng");
         return 1;
     }
 

@@ -97,6 +97,13 @@ final class Dispatcher {
         if (!isOwner && Config.isMuted(sender)) return;
 
         BuiltIns.Cmd builtin = BuiltIns.find(cmd);
+        String aliasTarget = builtin == null && CustomCommands.get(cmd) == null ? Config.alias(cmd) : null;
+        if (aliasTarget != null) {
+            String[] t = aliasTarget.split("\\s+", 2);
+            cmd = t[0].toLowerCase(Locale.ROOT);
+            args = t.length > 1 ? (args.isEmpty() ? t[1] : t[1] + " " + args) : args;
+            builtin = BuiltIns.find(cmd);
+        }
         String custom = builtin == null ? CustomCommands.get(cmd) : null;
         if (builtin == null && custom == null) return;
         if (builtin != null && builtin.ownerOnly() && !isOwner) return;
@@ -130,6 +137,17 @@ final class Dispatcher {
             case "math" -> out.say(MathEval.evaluateSafe(args));
             case "pchim" -> async(out, () -> Hypixel.bazaarPrices("ENCHANTMENT_ULTIMATE_CHIMERA_1", out));
             case "precomb" -> async(out, () -> Hypixel.bazaarPrices("RECOMBOBULATOR_3000", out));
+            case "pprice" -> async(out, () -> Hypixel.price(args, out));
+            case "ah" -> {
+                String q = Text.itemQuery(args);
+                if (q.isEmpty()) out.local("Usage : !ah <item>   (example : !ah necron's handle)");
+                else async(out, () -> Hypixel.lowestBin(q, out));
+            }
+            case "mayor" -> async(out, () -> Hypixel.mayor(out));
+            case "pets" -> async(out, () -> Stats.pets(out));
+            case "skills" -> async(out, () -> Stats.skills(out));
+            case "slayer" -> async(out, () -> Stats.slayer(out));
+            case "purse" -> async(out, () -> Stats.purse(out));
             case "pcookie" -> async(out, () -> Hypixel.bazaarPrices("BOOSTER_COOKIE", out));
             case "pkismet" -> async(out, () -> Hypixel.bazaarPrices("KISMET_FEATHER", out));
             case "phandle" -> async(out, () -> Hypixel.necronHandle(out));

@@ -64,4 +64,11 @@ final class Text {
     static boolean isPlayerName(String s) {
         return s != null && WORD.matcher(s).matches();
     }
+
+    /** Item name typed after a command: letters, digits, space, ' and -, at most 40 characters. */
+    static String itemQuery(String args) {
+        if (args == null) return "";
+        String s = args.replaceAll("[^\\p{L}\\p{N} '\\-]", "").replaceAll("\\s+", " ").trim();
+        return s.length() > 40 ? s.substring(0, 40).trim() : s;
+    }
 }

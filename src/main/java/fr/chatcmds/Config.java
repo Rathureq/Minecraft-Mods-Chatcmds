@@ -25,6 +25,8 @@ final class Config {
     /** "cm" or "inch" (used by !paff). */
     static volatile String unit = "cm";
     private static final Set<String> MUTED = ConcurrentHashMap.newKeySet();
+    /** Aliases: short name (no "!") -> command line it runs (no "!"), e.g. p -> pcookie. */
+    private static final java.util.Map<String, String> ALIASES = new ConcurrentHashMap<>();
     /** Starter list (a guess: Hypixel's filter is private). Added with /cc censor defaults. */
     static final java.util.List<String> DEFAULT_CENSORED = java.util.List.of(
             "cocaine", "heroin", "meth", "methamphetamine", "porn", "sex", "rape", "suicide",
@@ -68,6 +70,12 @@ final class Config {
                         MUTED.add(e.getAsString().toLowerCase(Locale.ROOT));
                     }
                 }
+                ALIASES.clear();
+                if (o.has("aliases") && o.get("aliases").isJsonObject()) {
+                    for (java.util.Map.Entry<String, JsonElement> e : o.getAsJsonObject("aliases").entrySet()) {
+                        ALIASES.put(e.getKey().toLowerCase(Locale.ROOT), e.getValue().getAsString());
+                    }
+                }
                 CENSORED.clear();
                 if (o.has("censored") && o.get("censored").isJsonArray()) {
                     for (JsonElement e : o.getAsJsonArray("censored")) {
@@ -95,6 +103,11 @@ final class Config {
             JsonArray muted = new JsonArray();
             for (String m : new TreeSet<>(MUTED)) muted.add(m);
             o.add("muted", muted);
+            JsonObject aliases = new JsonObject();
+            for (java.util.Map.Entry<String, String> e : new java.util.TreeMap<>(ALIASES).entrySet()) {
+                aliases.addProperty(e.getKey(), e.getValue());
+            }
+            o.add("aliases", aliases);
             JsonArray censored = new JsonArray();
             for (String w : new TreeSet<>(CENSORED)) censored.add(w);
             o.add("censored", censored);
@@ -132,6 +145,25 @@ final class Config {
         boolean removed = MUTED.remove(name.toLowerCase(Locale.ROOT));
         save();
         return removed;
+    }
+
+    static String alias(String name) {
+        return ALIASES.get(name.toLowerCase(Locale.ROOT));
+    }
+
+    static void aliasSet(String name, String target) {
+        ALIASES.put(name.toLowerCase(Locale.ROOT), target);
+        save();
+    }
+
+    static boolean aliasRemove(String name) {
+        boolean removed = ALIASES.remove(name.toLowerCase(Locale.ROOT)) != null;
+        save();
+        return removed;
+    }
+
+    static java.util.Map<String, String> aliases() {
+        return new java.util.TreeMap<>(ALIASES);
     }
 
     static void censorAdd(String word) {

@@ -15,6 +15,13 @@ final class BuiltIns {
         add("math <expr>", "Calculator: + - * / % ^ and parentheses", false, "math");
         add("pchim", "Chimera I Bazaar prices", false, "pchim");
         add("precomb", "Recombobulator 3000 Bazaar prices", false, "precomb");
+        add("pprice <item>", "Bazaar price of any item (BIN if not in the Bazaar)", false, "pprice");
+        add("ah <item>", "Lowest BIN of an item in the Auction House", false, "ah");
+        add("mayor", "Current mayor and minister", false, "mayor");
+        add("pets", "Active pet and its level", false, "pets");
+        add("skills", "Skill levels and average", false, "skills");
+        add("slayer", "Levels and XP of the 6 slayers", false, "slayer");
+        add("purse", "Coins in your purse", false, "purse");
         add("pcookie", "Booster Cookie Bazaar prices", false, "pcookie");
         add("pkismet", "Kismet Feather Bazaar prices", false, "pkismet");
         add("phandle", "Lowest BIN price of Necron's Handle", false, "phandle");
