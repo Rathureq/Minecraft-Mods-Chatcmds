@@ -16,6 +16,7 @@ final class BuiltIns {
         add("pchim", "Chimera I Bazaar prices", false, "pchim");
         add("precomb", "Recombobulator 3000 Bazaar prices", false, "precomb");
         add("pcookie", "Booster Cookie Bazaar prices", false, "pcookie");
+        add("pkismet", "Kismet Feather Bazaar prices", false, "pkismet");
         add("phandle", "Lowest BIN price of Necron's Handle", false, "phandle");
         add("inflation", "Price index of the old basket (base 100)", false, "inflation");
         add("comp1-7", "Boss collection progress and master runs missing", false,
