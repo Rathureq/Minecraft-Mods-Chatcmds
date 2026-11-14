@@ -131,6 +131,7 @@ final class Dispatcher {
             case "pchim" -> async(out, () -> Hypixel.bazaarPrices("ENCHANTMENT_ULTIMATE_CHIMERA_1", out));
             case "precomb" -> async(out, () -> Hypixel.bazaarPrices("RECOMBOBULATOR_3000", out));
             case "pcookie" -> async(out, () -> Hypixel.bazaarPrices("BOOSTER_COOKIE", out));
+            case "pkismet" -> async(out, () -> Hypixel.bazaarPrices("KISMET_FEATHER", out));
             case "phandle" -> async(out, () -> Hypixel.necronHandle(out));
             case "inflation" -> async(out, () -> Inflation.run(out));
             case "catalvl" -> async(out, () -> Hypixel.cataLevels(out));
