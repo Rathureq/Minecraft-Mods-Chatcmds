@@ -76,7 +76,7 @@ final class Dispatcher {
         if (text.startsWith("We blocked your comment")) {
             Matcher b = BLOCKED.matcher(text);
             out.local("Hypixel blocked" + (b.find() ? " : \"" + b.group(1) + "\"" : " one of your messages")
-                    + ". Find the word that triggered the filter and hide it with /cc censor add <word>.");
+                    + ". Find the word that triggered the filter and hide it with /cmd censor add <word>.");
             return;
         }
         PartyRoles.observe(text);
@@ -110,10 +110,27 @@ final class Dispatcher {
         if (!cooldownOk(cooldownKey(cmd))) return;
 
         if (custom != null) {
-            out.say(CustomCommands.render(custom, sender, Text.firstWord(args), ThreadLocalRandom.current()));
+            final String template = custom;
+            final CustomCommands.Ctx ctx = new CustomCommands.Ctx(cmd, sender, me, isOwner, args,
+                    ThreadLocalRandom.current(), false);
+            CustomCommands.use(cmd, sender);
+            if (CustomCommands.needsAsync(template)) async(out, () -> sayLines(CustomCommands.render(template, ctx)));
+            else out.say(CustomCommands.render(template, ctx));
             return;
         }
         run(cmd, args, sender, me);
+    }
+
+    /** Sends an answer made of several lines ({br}) as separate messages, one second apart. */
+    private void sayLines(String text) throws InterruptedException {
+        int sent = 0;
+        for (String line : text.split("\n")) {
+            if (line.isBlank()) continue;
+            if (sent >= CustomCommands.MAX_LINES) break;
+            if (sent > 0) Thread.sleep(1200);
+            out.say(line);
+            sent++;
+        }
     }
 
     private static String cooldownKey(String cmd) {

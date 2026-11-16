@@ -8,7 +8,7 @@ import net.minecraft.network.chat.Component;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Read-only list of all the commands. Open it with /cc gui. */
+/** Read-only list of all the commands. Open it with /cmd gui. */
 final class CommandsScreen extends Screen {
     private record Line(String text, int color) {}
 
@@ -33,7 +33,7 @@ final class CommandsScreen extends Screen {
     @Override
     protected void init() {
         lines = buildLines();
-        perPage = Math.max(1, (this.height - 70) / LINE_HEIGHT);
+        perPage = Math.max(1, (this.height - 92) / LINE_HEIGHT);
         pages = Math.max(1, (lines.size() + perPage - 1) / perPage);
         page = Math.min(Math.max(requestedPage, 0), pages - 1);
 
@@ -51,6 +51,11 @@ final class CommandsScreen extends Screen {
                 .pos(this.width / 2 + 50, this.height - 28)
                 .size(80, 20)
                 .build());
+        this.addRenderableWidget(Button.builder(Component.literal("Edit custom commands"),
+                        b -> this.minecraft.gui.setScreen(new CustomScreen(this, 0)))
+                .pos(this.width / 2 - 80, this.height - 52)
+                .size(160, 20)
+                .build());
         prev.active = page > 0;
         next.active = page < pages - 1;
     }
@@ -61,7 +66,7 @@ final class CommandsScreen extends Screen {
         super.extractRenderState(graphics, mouseX, mouseY, delta);
 
         graphics.text(this.font, "Chat Commands  (page " + (page + 1) + "/" + pages + ")", 10, 10, TITLE);
-        graphics.text(this.font, "Orange = only you can use it. Green = created with /cc add.", 10, 24, NORMAL);
+        graphics.text(this.font, "Orange = only you can use it. Green = created with /cmd add.", 10, 24, NORMAL);
 
         int maxWidth = this.width - 20;
         int y = 42;
@@ -91,14 +96,14 @@ final class CommandsScreen extends Screen {
         out.add(new Line("-- Your custom commands --", HEADER));
         var custom = CustomCommands.all();
         if (custom.isEmpty()) {
-            out.add(new Line("none yet : /cc add <name> <response>", NORMAL));
+            out.add(new Line("none yet : /cmd add <name> <response>", NORMAL));
         } else {
             custom.forEach((n, r) -> out.add(new Line("!" + n + "  -  " + r, CUSTOM)));
         }
         out.add(new Line("-- Slash commands (only on your computer) --", HEADER));
         out.add(new Line("/dh  -  /warp dh", NORMAL));
-        out.add(new Line("/rng <category> <option> <drop>  -  RNG meter, with tab completion", NORMAL));
-        out.add(new Line("/cc help  -  keys, accounts, mute, custom commands, RNG entries", NORMAL));
+        out.add(new Line("/rng [drop]  -  RNG meter fill, Tab completes the drops", NORMAL));
+        out.add(new Line("/cmd help  -  keys, accounts, mute, custom commands, aliases, editor", NORMAL));
         return out;
     }
 }

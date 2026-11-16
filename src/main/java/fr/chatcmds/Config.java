@@ -14,7 +14,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-/** Settings stored in .minecraft/config/chatcmds.json. Edited in game with /cc ... */
+/** Settings stored in .minecraft/config/chatcmds.json. Edited in game with /cmd ... */
 final class Config {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
@@ -27,11 +27,21 @@ final class Config {
     private static final Set<String> MUTED = ConcurrentHashMap.newKeySet();
     /** Aliases: short name (no "!") -> command line it runs (no "!"), e.g. p -> pcookie. */
     private static final java.util.Map<String, String> ALIASES = new ConcurrentHashMap<>();
-    /** Starter list (a guess: Hypixel's filter is private). Added with /cc censor defaults. */
+    /** Starter list (a guess: Hypixel's filter is private). Added with /cmd censor defaults. */
     static final java.util.List<String> DEFAULT_CENSORED = java.util.List.of(
-            "cocaine", "heroin", "meth", "methamphetamine", "porn", "sex", "rape", "suicide",
-            "fuck", "fucking", "fucked", "fucker", "shit", "bullshit", "bitch", "cunt", "dick",
-            "pussy", "whore", "slut");
+            // drugs
+            "cocaine", "coke", "heroin", "meth", "methamphetamine", "crack", "lsd", "mdma", "ecstasy",
+            "weed", "marijuana", "cannabis", "opium", "fentanyl", "overdose", "drugs", "drug",
+            // sexual
+            "porn", "sex", "sexy", "rape", "raped", "nude", "nudes", "naked", "boobs", "horny", "orgasm",
+            "dick", "pussy", "cock", "penis", "vagina", "anal", "cum", "blowjob", "masturbate", "whore",
+            "slut", "hooker", "prostitute",
+            // swear words
+            "fuck", "fucking", "fucked", "fucker", "motherfucker", "shit", "bullshit", "shitty", "bitch",
+            "bastard", "asshole", "ass", "cunt", "damn", "crap", "piss", "wtf", "stfu",
+            // violence, self-harm
+            "kill", "killing", "murder", "suicide", "kms", "kys", "die", "dead", "bomb", "terrorist",
+            "gun", "shoot", "shooting");
 
     /** Words masked in every message the mod sends (Hypixel chat filter). */
     private static final Set<String> CENSORED = ConcurrentHashMap.newKeySet();
@@ -52,7 +62,7 @@ final class Config {
         try {
             if (file == null) return;
             if (!Files.exists(file)) {
-                CENSORED.add("cocaine");
+                CENSORED.addAll(DEFAULT_CENSORED);
                 save();
                 return;
             }
@@ -82,7 +92,7 @@ final class Config {
                         CENSORED.add(e.getAsString().toLowerCase(Locale.ROOT));
                     }
                 } else {
-                    CENSORED.add("cocaine");
+                    CENSORED.addAll(DEFAULT_CENSORED);
                 }
             }
             loadedMtime = Files.getLastModifiedTime(file).toMillis();

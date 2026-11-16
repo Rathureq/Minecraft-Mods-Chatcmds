@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  *
  * Your stored score and selected drop are taken, in this order, from: your SkyBlock profile (if the API
  * exposes them, searched automatically), the "RNG Meter - X Stored XP/Score" chat lines, and what you
- * saved with /cc rng select and /cc rng score.
+ * saved with /cmd rng select and /cmd rng score.
  */
 final class Rng {
     /** One drop of one meter. token example: "m7_necron_handle". */
@@ -251,14 +251,14 @@ final class Rng {
             }
         }
         if (d == null) {
-            out.local("No selected drop known. Choose it with /cc rng select <drop> (Tab lists them), "
+            out.local("No selected drop known. Choose it with /cmd rng select <drop> (Tab lists them), "
                     + "or use !rng <drop>.");
             return;
         }
         Long score = apiScore != null ? apiScore : score(d.category());
         if (score == null) {
             out.local("Score of " + d.category() + " unknown yet. It is read from the \"RNG Meter - X Stored\" chat line "
-                    + "after a run, or set it with /cc rng score <" + d.category() + "> <value>.");
+                    + "after a run, or set it with /cmd rng score <" + d.category() + "> <value>.");
             return;
         }
         out.say(answer(d, score));

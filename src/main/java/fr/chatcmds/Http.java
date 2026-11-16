@@ -38,7 +38,7 @@ final class Http {
         int code = res.statusCode();
         if (code == 403) {
             throw new ApiException(service.equals("Hypixel")
-                    ? "Hypixel rejected the API key (expired or invalid). Use /cc key <new key>"
+                    ? "Hypixel rejected the API key (expired or invalid). Use /cmd key <new key>"
                     : service + " rejected the API key or the account is private.");
         }
         if (code == 429) throw new ApiException(service + " rate limit reached, try again in a few seconds.");

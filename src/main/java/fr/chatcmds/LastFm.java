@@ -13,11 +13,11 @@ final class LastFm {
 
     static void nowPlaying(Out out) throws Exception {
         if (Config.lastfmKey.isEmpty()) {
-            out.local("Last.fm API key missing. Create one on last.fm/api/account/create, then type /cc lastfmkey <key>");
+            out.local("Last.fm API key missing. Create one on last.fm/api/account/create, then type /cmd lastfmkey <key>");
             return;
         }
         if (Config.lastfmUser.isEmpty()) {
-            out.local("No Last.fm account linked. Type /cc link <your Last.fm username>");
+            out.local("No Last.fm account linked. Type /cmd link <your Last.fm username>");
             return;
         }
         String url = "https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&limit=1&format=json"

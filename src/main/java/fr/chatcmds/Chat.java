@@ -1,7 +1,9 @@
 package fr.chatcmds;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 
 /** Minecraft side of {@link Out}: public chat and your own chat window. */
 final class Chat implements Out {
@@ -20,7 +22,15 @@ final class Chat implements Out {
     public void local(String message) {
         Minecraft mc = Minecraft.getInstance();
         mc.execute(() -> {
-            if (mc.player != null) mc.player.sendSystemMessage(Component.literal("[chatcmds] " + message));
+            if (mc.player == null) return;
+            ChatFormatting color = switch (Text.localKind(message)) {
+                case 2 -> ChatFormatting.RED;
+                case 1 -> ChatFormatting.YELLOW;
+                default -> ChatFormatting.GREEN;
+            };
+            MutableComponent line = Component.literal("[chatcmds] ").withStyle(ChatFormatting.GOLD);
+            line.append(Component.literal(message).withStyle(color));
+            mc.player.sendSystemMessage(line);
         });
     }
 

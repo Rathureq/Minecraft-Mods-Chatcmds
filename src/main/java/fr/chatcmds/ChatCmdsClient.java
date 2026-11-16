@@ -14,8 +14,10 @@ import java.nio.file.Path;
  * See README.md for the list of commands and the setup.
  */
 public class ChatCmdsClient implements ClientModInitializer {
-    /** Set by /cc gui, handled on the next tick (a screen opened during the command would be closed). */
+    /** Set by /cmd gui, handled on the next tick (a screen opened during the command would be closed). */
     static volatile boolean openGui;
+    /** Set by /cmd editor: "" opens the list of custom commands, a name opens that command. */
+    static volatile String openEditor;
     private static long ticks;
 
     @Override
@@ -38,17 +40,26 @@ public class ChatCmdsClient implements ClientModInitializer {
         ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
             if (!overlay) dispatcher.onMessage(message.getString());
         });
+        // Hides the /locraw answer that the {area} placeholder asked for.
+        ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) ->
+                overlay || !Area.consume(message.getString()));
         // Vanilla servers: signed player messages.
         ClientReceiveMessageEvents.CHAT.register((message, signed, sender, params, timestamp) ->
                 dispatcher.onMessage(message.getString()));
 
         ClientCommandRegistrationCallback.EVENT.register((cmdDispatcher, buildContext) ->
-                CcCommands.register(cmdDispatcher, chat));
+                CmdCommands.register(cmdDispatcher, chat));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (openGui) {
                 openGui = false;
                 client.gui.setScreen(new CommandsScreen(0));
+            }
+            String editor = openEditor;
+            if (editor != null) {
+                openEditor = null;
+                client.gui.setScreen(editor.isEmpty() ? new CustomScreen(null, 0)
+                        : new EditorScreen(new CustomScreen(null, 0), editor));
             }
             ticks++;
             // Silent inflation measure every 30 minutes (first one after 1 minute), only while in a world.

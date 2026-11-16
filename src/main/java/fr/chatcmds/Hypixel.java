@@ -67,7 +67,7 @@ final class Hypixel {
     /** Selected SkyBlock profile of the player (cached 60 s). Null after telling the player why. */
     static Profile profile(Out out) throws Exception {
         if (Config.apiKey.isEmpty()) {
-            out.local("Hypixel API key missing. Get one on developer.hypixel.net, then type /cc key <your key>");
+            out.local("Hypixel API key missing. Get one on developer.hypixel.net, then type /cmd key <your key>");
             return null;
         }
         String id = Config.uuid.isEmpty() ? Config.uuidSupplier.get() : Config.uuid;
@@ -386,7 +386,7 @@ final class Hypixel {
         out.say(sb.toString());
     }
 
-    // ---------- /cc find : locate a field in your own profile ----------
+    // ---------- /cmd find : locate a field in your own profile ----------
 
     /** Lists the paths of JSON keys containing the text (case-insensitive). */
     static List<String> search(JsonElement root, String needle, int max) {

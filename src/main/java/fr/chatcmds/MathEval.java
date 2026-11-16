@@ -35,6 +35,18 @@ public class MathEval {
         }
     }
 
+    /** Just the value, for the {math:...} placeholder of custom commands ("?" when invalid). */
+    static String calc(String expr) {
+        try {
+            if (expr == null || expr.isBlank() || expr.length() > 100) return "?";
+            double r = new MathEval(expr.trim().replace(',', '.')).parse();
+            if (Double.isNaN(r) || Double.isInfinite(r)) return "?";
+            return Math.abs(r) >= 1e100 ? sci(r) : format(r);
+        } catch (RuntimeException e) {
+            return "?";
+        }
+    }
+
     /** Plain number for reasonable values, scientific notation for huge or tiny ones. */
     static String format(double v) {
         double a = Math.abs(v);

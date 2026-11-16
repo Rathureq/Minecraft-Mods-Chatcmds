@@ -71,4 +71,20 @@ final class Text {
         String s = args.replaceAll("[^\\p{L}\\p{N} '\\-]", "").replaceAll("\\s+", " ").trim();
         return s.length() > 40 ? s.substring(0, 40).trim() : s;
     }
+
+    /** How to color a message shown only to you: 0 = information, 1 = warning or usage, 2 = error. */
+    static int localKind(String message) {
+        String m = message == null ? "" : message.toLowerCase(Locale.ROOT).trim();
+        if (m.startsWith("error") || m.startsWith("unknown") || m.startsWith("no such") || m.startsWith("hypixel blocked")
+                || m.contains("rejected") || m.contains("missing") || m.contains("not found")
+                || m.contains("could not") || m.contains("invalid") || m.contains("too long")
+                || m.contains("cannot") || m.contains("too many")) {
+            return 2;
+        }
+        if (m.startsWith("usage") || m.startsWith("no ") || m.contains("unknown yet") || m.contains("not set")
+                || m.contains("rate limit") || m.contains("already")) {
+            return 1;
+        }
+        return 0;
+    }
 }

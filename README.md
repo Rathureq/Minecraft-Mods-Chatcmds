@@ -22,16 +22,17 @@ all commands in a GUI, and link a Last.fm account to share the song you are list
 
 | What | Command |
 |---|---|
-| Hypixel API key (needed by `!comp`, `!pb`, `!catalvl`, `!bank`, `!sblvl`, `!mp`, `!rng`) | `/cc key <key>` |
-| Last.fm API key (needed by `!playing_music`) | `/cc lastfmkey <key>` |
-| Last.fm account | `/cc link <username>` |
-| Check what is configured | `/cc status` |
+| Hypixel API key (needed by `!comp`, `!pb`, `!catalvl`, `!bank`, `!sblvl`, `!mp`, `!rng`) | `/cmd key <key>` |
+| Last.fm API key (needed by `!playing_music`) | `/cmd lastfmkey <key>` |
+| Last.fm account | `/cmd link <username>` |
+| Check what is configured | `/cmd status` |
 
 - Get a Hypixel key on <https://developer.hypixel.net>. Development keys expire: when a command answers
-  that the key was rejected, create a new one and run `/cc key <new key>` again. No restart needed.
+  that the key was rejected, create a new one and run `/cmd key <new key>` again. No restart needed.
 - Get a Last.fm key on <https://www.last.fm/api/account/create>. Spotify can scrobble to Last.fm
   (Spotify settings > connect to Last.fm), which is what lets the mod read your current song.
-- `/cc ...` commands only run on your computer, they are **never sent to the server**. Always type the
+- The mod's own messages in your chat are colored : green for information, yellow for a warning or a usage, red for an error, after a gold `[chatcmds]`.
+- `/cmd ...` commands only run on your computer, they are **never sent to the server**. Always type the
   leading `/`: without it your key would be sent in the public chat.
 - Keep your keys private. Never put them in the repository or share the config folder.
 
@@ -71,7 +72,7 @@ Anyone can use them (the answers come from **your** account, stats are **yours**
 | Command | Effect |
 |---|---|
 | `!cm-inch cm\|inch` | Change unit for the account |
-| `!link <lastfm user>` | Link your Last.fm account (same as `/cc link`, but visible in the chat) |
+| `!link <lastfm user>` | Link your Last.fm account (same as `/cmd link`, but visible in the chat) |
 | `!mute <player>` | Ignore all the commands of this player. Does not work on yourself |
 | `!unmute <player>` | Stop ignoring them |
 
@@ -82,28 +83,30 @@ Each command has a 3 second cooldown to avoid spam.
 | Command | Effect |
 |---|---|
 | `/dh` | Same as `/warp dh` |
-| `/cc gui` | Opens the list of all commands (built-in and custom) |
-| `/cc help` | Lists the `/cc` subcommands |
-| `/cc add <name> <response>` | Creates a custom command |
-| `/cc remove <name>` | Deletes a custom command |
-| `/cc list` | Lists your custom commands |
-| `/cc unit <cm\|inch>`, `/cc mute <player>`, `/cc unmute <player>` | Same as the owner-only chat commands |
-| `/cc censor add\|remove\|list <word>` | Words the mod masks in its answers, to get past the Hypixel chat filter. Whole words only |
-| `/cc censor defaults` | Re-adds the starter list (drugs, sexual and swear words, violence), which is also loaded on the first start. It is a guess: Hypixel's filter is private |
-| `/cc alias <name> <command>` | Shortcut: `/cc alias !p !pcookie` makes `!p` run `!pcookie`. Extra words are kept: `/cc alias !k pprice kismet`. Also `/cc alias list` and `/cc alias remove <name>` |
-| `/cc reload` | Reloads the config files |
-| `/cc rng select <drop>`, `/cc rng score <category> <value>` | Set your selected drop / stored score by hand (Tab completes) |
-| `/cc find <text>` | Looks for a key in your SkyBlock profile (helps to set up `!rng`) |
-| `/cc inflation reset` | Makes today the new base 100 of `!inflation` |
+| `/cmd gui` | Opens the list of all commands (built-in and custom) |
+| `/cmd help` | Lists the `/cmd` subcommands |
+| `/cmd add <name> <response>` | Creates a custom command |
+| `/cmd editor [name]` | Opens the editor of custom commands |
+| `/cmd test <name> [args]` | Runs a custom command with real data and shows the answer only to you |
+| `/cmd remove <name>` | Deletes a custom command |
+| `/cmd list` | Lists your custom commands |
+| `/cmd unit <cm\|inch>`, `/cmd mute <player>`, `/cmd unmute <player>` | Same as the owner-only chat commands |
+| `/cmd censor add\|remove\|list <word>` | Words the mod masks in its answers (`cocaine` is sent as `c******`), to get past the Hypixel chat filter. Whole words only |
+| `/cmd censor defaults` | Re-adds the starter list (drugs, sexual and swear words, violence), which is also loaded on the first start. It is a guess: Hypixel's filter is private |
+| `/cmd alias <name> <command>` | Shortcut: `/cmd alias !p !pcookie` makes `!p` run `!pcookie`. Extra words are kept: `/cmd alias !k pprice kismet`. Also `/cmd alias list` and `/cmd alias remove <name>` |
+| `/cmd reload` | Reloads the config files |
+| `/cmd rng select <drop>`, `/cmd rng score <category> <value>` | Set your selected drop / stored score by hand (Tab completes) |
+| `/cmd find <text>` | Looks for a key in your SkyBlock profile (helps to set up `!rng`) |
+| `/cmd inflation reset` | Makes today the new base 100 of `!inflation` |
 | `/rng [drop]` | Same as `!rng`, with tab completion on all drops |
 
 ## Custom commands
 
 ```
-/cc add lucky {user} has {percent} luck today
-/cc add dice {user} rolled {random:1-6}
-/cc add eightball {pick:Yes|No|Maybe|Ask again later}
-/cc add hug {user} hugs {target}
+/cmd add lucky {user} has {percent} luck today
+/cmd add dice {user} rolled {random:1-6}
+/cmd add eightball {pick:Yes|No|Maybe|Ask again later}
+/cmd add hug {user} hugs {target}
 ```
 
 Then anyone can write `!lucky`, `!dice`, `!eightball` or `!hug Bob` in the chat.
@@ -111,12 +114,60 @@ Custom commands are saved and come back at every start.
 
 | Placeholder | Replaced by |
 |---|---|
+| `{user}` | Name of the player who wrote the command |
+| `{me}` | Your own name |
+| `{owner}` | `true` when the sender is you, else `false` |
+| `{arg}`, `{arg2}`, `{arg3}` | First, second, third word written after the command (empty if none) |
+| `{args}` | Everything written after the command |
+| `{target}` | `{arg}`, or `{user}` when there is no argument |
 | `{random:1-100}` | A random number in the range (included) |
 | `{percent}` | A random percentage, for example `57%` |
 | `{pick:a\|b\|c}` | One random item of the list |
-| `{user}` | Name of the player who wrote the command |
-| `{arg}` | First word written after the command (empty if none) |
-| `{target}` | `{arg}`, or `{user}` when there is no argument |
+| `{time}`, `{date}` | `21:35` and `2026-11-16` |
+| `{count}` | How many times the command was used (everyone) |
+| `{mycount}` | How many times the sender used it |
+| `{top}` | The 3 players who used it the most |
+| `{math:2*{arg}}` | Calculator, only the value |
+| `{price:cookie}`, `{sell:cookie}` | Bazaar insta buy / insta sell price of an item (same names as `!pprice`) |
+| `{replace:text\|from\|to}` | Replaces every `from` by `to` in `text` |
+| `{set:x=5}` and `{get:x}` | Variable used only inside this answer. `{get:x\|0}` gives `0` when `x` does not exist (otherwise empty) |
+| `{store:x=5}` and `{load:x}` | Variable kept between answers (shared by all commands). `{load:x\|0}` also takes a default |
+| `{inc:x}`, `{inc:x=5}` | Adds 1 (or 5, or a negative number) to the variable `x`; the answer is empty. `{sinc:x}` does the same on a stored variable |
+| `{area}` | Where you are (`Hub`, `Dungeon`, `Private Island`...), asked with `/locraw`. It is the island, not the sub-zone |
+| `{br}` | New line: the answer is sent as several chat messages, 1.2 s apart, 5 at most |
+| `{until:2026-12-25}` | Number of days left until the date (negative once it is past) |
+| `{if:A>B?then\|elif:C==D?other\|else}` | Condition. Operators `>` `<` `>=` `<=` `==` `!=`, numbers or text (case ignored). `elif` and `else` are optional |
+
+Placeholders can be nested: the innermost is resolved first, for example `{if:{random:1-100}>50?Win|Lose}`.
+A `{get:x}` only sees what was set **before** it in the answer. Inside `{if:...}` the texts cannot contain `?` or `|`.
+What players write in the chat is cleaned: the characters `{ } | ?` are removed, so nobody can inject placeholders.
+
+```
+/cmd add countdown Christmas in {until:2026-12-25} days
+/cmd add where {user}, I am in {area} right now
+/cmd add rules Rule 1 : be nice{br}Rule 2 : have fun
+/cmd add visits Visit n°{count} (you : {mycount})
+/cmd add coin {if:{random:1-2}==1?Heads|Tails}
+/cmd add hello {if:{arg}==?Hello everyone|Hello {arg}}
+/cmd add boss {if:{owner}==true?Yes boss|Who are you ?}
+/cmd add grade {if:{arg}>=16?Great|elif:{arg}>=10?Pass|Fail}
+/cmd add cookie Booster Cookie costs {price:cookie} coins
+/cmd add double {arg} x 2 = {math:{arg}*2}
+/cmd add leet {replace:{args}|e|3}
+/cmd add hug #{count} : {user} hugs {target}. Top huggers : {top}
+```
+
+### Test before sending
+
+- In the editor, **Test** opens a test bench: choose who writes the command and what they type, then **Run (sample data)**
+  (instant, fake prices) or **Run live** (real prices, area and counters, nothing is sent and nothing is counted).
+- `/cmd test <name> [arguments]` runs a saved command the same way and shows the answer only to you.
+
+### Editor
+
+`/cmd editor` (or **Edit custom commands** in `/cmd gui`) opens the list of your commands: click one to edit it,
+or **+ New command**. The editor has a name field, a response field, one button per placeholder (click it to insert
+it where the cursor is) and a live preview with sample data. `/cmd editor <name>` opens one command directly.
 
 Rules: a name has 1 to 20 letters, digits, `_` or `-`, and cannot be a built-in command. A response has at most
 200 characters and cannot start with `/` or `!`. For safety, the mod never sends a message starting with `/`
@@ -132,11 +183,11 @@ for example `m7_necron_handle`, `f1_bonzo_staff`, `revenant_foul_flesh`. Press *
 
 Where your selected drop and stored score come from (first found wins):
 1. your SkyBlock profile, if the Hypixel API exposes them (the mod searches for an "rng meter" object;
-   the layout is undocumented, so this may find nothing: check with `/cc find meter`);
+   the layout is undocumented, so this may find nothing: check with `/cmd find meter`);
 2. the `RNG Meter - 15,900 Stored Score/XP` line that Hypixel prints after a run or a slayer boss;
-3. what you saved by hand: `/cc rng select <drop>` and `/cc rng score <category> <value>`.
+3. what you saved by hand: `/cmd rng select <drop>` and `/cmd rng score <category> <value>`.
 
-Select your drop once with `/cc rng select m7_necron_handle`; the score then follows the chat line after each run.
+Select your drop once with `/cmd rng select m7_necron_handle`; the score then follows the chat line after each run.
 
 ## Inflation
 
@@ -156,7 +207,7 @@ All in `.minecraft/config/`:
 | File | Content |
 |---|---|
 | `chatcmds.json` | Keys, Last.fm account, unit, muted players, masked words, aliases |
-| `chatcmds-commands.json` | Your custom commands |
+| `chatcmds-commands.json` | Your custom commands, their use counters and stored variables |
 | `chatcmds-rng.json` | Selected RNG drop and stored scores |
 | `chatcmds-data.json` | Inflation base and history |
 
@@ -172,7 +223,7 @@ To build on your computer: JDK 25 and Gradle 9.5 or newer, then `gradle build`; 
 
 - The mod answers **in the public chat with your account**. Servers can mute players who spam or whose
   messages break the rules (including links, or the content of custom commands). You are responsible for
-  what your commands say. Use `!mute` / `/cc mute` against abusers.
+  what your commands say. Use `!mute` / `/cmd mute` against abusers.
 - Hypixel API policy: use your own key, for your own account. Do not publish a jar containing a key and do not
   share your key. The mod caches API answers (profile 60 s, Bazaar 30 s, Auction House 60 s).
 - `!role` reads the Party Finder join messages of the chat (`Name joined the dungeon group! (Mage Level 40)`).
@@ -182,9 +233,9 @@ To build on your computer: JDK 25 and Gradle 9.5 or newer, then `gradle build`; 
 
 | Problem | Fix |
 |---|---|
-| `Hypixel rejected the API key` | Key expired or wrong: create a new one and run `/cc key <key>` |
-| `Hypixel API key missing` | Run `/cc key <key>` |
-| Nothing happens | Check `/cc status`; errors are shown only to you, prefixed with `[chatcmds]` |
+| `Hypixel rejected the API key` | Key expired or wrong: create a new one and run `/cmd key <key>` |
+| `Hypixel API key missing` | Run `/cmd key <key>` |
+| Nothing happens | Check `/cmd status`; errors are shown only to you, prefixed with `[chatcmds]` |
 | A command is slow | `!phandle` reads the whole Auction House the first time (then cached for 60 s) |
 | `!playing_music` says nothing is playing | Spotify must scrobble to Last.fm and the account must be public |
-| A message is not sent, or `We blocked your comment` | Hypixel chat filter (links, adult words, song titles...). The mod warns you in your chat. Mask the word with `/cc censor add <word>` |
+| A message is not sent, or `We blocked your comment` | Hypixel chat filter (links, adult words, song titles...). The mod warns you in your chat. Mask the word with `/cmd censor add <word>` |
