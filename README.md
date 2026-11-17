@@ -130,7 +130,7 @@ Custom commands are saved and come back at every start.
 | `{math:2*{arg}}` | Calculator, only the value |
 | `{price:cookie}`, `{sell:cookie}` | Bazaar insta buy / insta sell price of an item (same names as `!pprice`) |
 | `{replace:text\|from\|to}` | Replaces every `from` by `to` in `text` |
-| `{set:x=5}` and `{get:x}` | Variable used only inside this answer. `{get:x\|0}` gives `0` when `x` does not exist (otherwise empty) |
+| `{set:x=5}` and `{get:x}` | Variable used only inside this answer. `{x}` is a short form of `{get:x}`. `{get:x\|0}` gives `0` when `x` does not exist. `{get:x}` also finds a variable saved by `{store:}` in another command |
 | `{store:x=5}` and `{load:x}` | Variable kept between answers (shared by all commands). `{load:x\|0}` also takes a default |
 | `{inc:x}`, `{inc:x=5}` | Adds 1 (or 5, or a negative number) to the variable `x`; the answer is empty. `{sinc:x}` does the same on a stored variable |
 | `{area}` | Where you are (`Hub`, `Dungeon`, `Private Island`...), asked with `/locraw`. It is the island, not the sub-zone |
@@ -139,7 +139,7 @@ Custom commands are saved and come back at every start.
 | `{if:A>B?then\|elif:C==D?other\|else}` | Condition. Operators `>` `<` `>=` `<=` `==` `!=`, numbers or text (case ignored). `elif` and `else` are optional |
 
 Placeholders can be nested: the innermost is resolved first, for example `{if:{random:1-100}>50?Win|Lose}`.
-A `{get:x}` only sees what was set **before** it in the answer. Inside `{if:...}` the texts cannot contain `?` or `|`.
+The answer is read once from left to right: a variable must be set **before** it is read, and a value can contain other placeholders (`{set:x={random:1-6}}`). In `{if:...}` and `{pick:...}` only the chosen part is evaluated. Inside `{if:...}` the texts cannot contain a bare `?` or `|` (inside `{...}` they can).
 What players write in the chat is cleaned: the characters `{ } | ?` are removed, so nobody can inject placeholders.
 
 ```
@@ -166,8 +166,13 @@ What players write in the chat is cleaned: the characters `{ } | ?` are removed,
 ### Editor
 
 `/cmd editor` (or **Edit custom commands** in `/cmd gui`) opens the list of your commands: click one to edit it,
-or **+ New command**. The editor has a name field, a response field, one button per placeholder (click it to insert
-it where the cursor is) and a live preview with sample data. `/cmd editor <name>` opens one command directly.
+or **+ New command**. `/cmd editor <name>` opens one command directly.
+
+The editor has a name field, a response field and a toolbar of placeholders sorted in tabs
+(**Sender**, **Words**, **Random**, **Info**, **Text**, **Variables**, **If**, **Examples**).
+Click a button to insert it where the cursor is. Hover a button (or click it) to read what it does and the result it
+gives on sample data. The **Examples** tab replaces the response with a complete example. The line under the response
+shows a live preview, or the first error in red. **Test** opens the test bench.
 
 Rules: a name has 1 to 20 letters, digits, `_` or `-`, and cannot be a built-in command. A response has at most
 200 characters and cannot start with `/` or `!`. For safety, the mod never sends a message starting with `/`

@@ -48,7 +48,7 @@ final class CustomCommands {
     static final String HELP = "Placeholders: {user} {me} {owner} {arg} {arg2} {arg3} {args} {target} "
             + "{random:1-100} {percent} {pick:a|b|c} {time} {date} {count} {mycount} {top} {math:..} "
             + "{price:item} {sell:item} {replace:t|a|b} {set:x=1} {get:x} {store:x=1} {load:x} "
-            + "{if:A>B?then|elif:C>D?other|else} {inc:x} {sinc:x} {area} {br} {until:2026-12-25}";
+            + "{if:A>B?then|elif:C>D?other|else} {inc:x} {sinc:x} {area} {br} {until:2026-12-25} {x}";
 
     /** Everything a response can depend on. */
     static final class Ctx {
@@ -63,6 +63,12 @@ final class CustomCommands {
         /** False for a live test: stored variables are not written. */
         final boolean persist;
         final Map<String, String> vars = new HashMap<>();
+        /** First invalid placeholder met while rendering, or null. */
+        String error;
+        /** Names of the variables that the template sets somewhere (so {name} is accepted for them). */
+        java.util.Set<String> declared = new java.util.HashSet<>();
+        int depth;
+        int steps;
 
         Ctx(String cmd, String user, String owner, boolean isOwner, String args, Random rnd, boolean dry) {
             this(cmd, user, owner, isOwner, args, rnd, dry, !dry);
@@ -92,8 +98,8 @@ final class CustomCommands {
     }
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final Pattern PLACEHOLDER = Pattern.compile("\\{([^{}]*)}");
-    private static final Pattern RANDOM = Pattern.compile("random:(\\d{1,9})-(\\d{1,9})");
+    private static final Pattern DECLARE = Pattern.compile("\\{(?:set|inc):([A-Za-z0-9_]{1,20})");
+    private static final Pattern RANDOM = Pattern.compile("(\\d{1,9})-(\\d{1,9})");
     private static final Pattern COND = Pattern.compile("^(.*?)(>=|<=|==|!=|>|<)(.*)$", Pattern.DOTALL);
     private static final Pattern VAR_NAME = Pattern.compile("[A-Za-z0-9_]{1,20}");
     private static final int MAX_VARS = 50;
@@ -255,10 +261,10 @@ final class CustomCommands {
         String r = response.trim();
         if (r.length() > 200) return "The response is too long (200 characters max).";
         if (r.startsWith("/") || r.startsWith("!")) return "A response cannot start with / or !.";
-        // dry run: anything still between braces afterwards is not a valid placeholder
-        String dry = render(r, Ctx.sample("You"));
-        Matcher left = PLACEHOLDER.matcher(dry);
-        if (left.find()) return "Unknown or invalid placeholder " + left.group(0) + ". " + HELP;
+        // dry run: the first invalid placeholder is reported
+        Ctx ctx = Ctx.sample("You");
+        String dry = render(r, ctx);
+        if (ctx.error != null) return "Unknown or invalid placeholder " + ctx.error + ". " + HELP;
         if (dry.split("\n", -1).length > MAX_LINES) return "Too many lines ({br}): " + MAX_LINES + " at most.";
         return null;
     }
@@ -275,16 +281,87 @@ final class CustomCommands {
     }
 
     // ---- rendering ----
+    //
+    // The response is read once, from left to right. A placeholder is resolved when it is reached, and the
+    // placeholders inside it first (so {set:x={random:1-6}} sets x to the number, and a {get:x} written after it
+    // sees that value). In {if:...} and {pick:...} only the chosen part is evaluated.
 
-    /** Fills the placeholders of a response. Nested ones are resolved from the inside out. */
+    private static final int MAX_DEPTH = 30;
+    private static final int MAX_STEPS = 3000;
+
+    /** Fills the placeholders of a response. After the call, ctx.error holds the first invalid placeholder. */
     static String render(String template, Ctx ctx) {
-        String cur = template;
-        for (int i = 0; i < 8; i++) {
-            String next = pass(cur, ctx);
-            if (next.equals(cur)) break;
-            cur = next;
+        ctx.declared = new java.util.HashSet<>();
+        Matcher m = DECLARE.matcher(template);
+        while (m.find()) ctx.declared.add(m.group(1));
+        ctx.depth = 0;
+        ctx.steps = 0;
+        return eval(template, ctx);
+    }
+
+    /** Index of the "}" that closes the "{" at position open, or -1. */
+    private static int findClose(String s, int open) {
+        int depth = 0;
+        for (int i = open; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '{') depth++;
+            else if (c == '}' && --depth == 0) return i;
         }
-        return cur;
+        return -1;
+    }
+
+    /** Splits at the separator, ignoring the ones inside {...}. At most limit parts (0 = no limit). */
+    private static List<String> splitTop(String s, char sep, int limit) {
+        List<String> parts = new ArrayList<>();
+        int depth = 0;
+        int start = 0;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '{') depth++;
+            else if (c == '}') depth--;
+            else if (c == sep && depth == 0 && (limit == 0 || parts.size() < limit - 1)) {
+                parts.add(s.substring(start, i));
+                start = i + 1;
+            }
+        }
+        parts.add(s.substring(start));
+        return parts;
+    }
+
+    /** Resolves every {...} of the text, left to right. */
+    private static String eval(String s, Ctx ctx) {
+        if (++ctx.depth > MAX_DEPTH) {
+            if (ctx.error == null) ctx.error = "(too deep)";
+            ctx.depth--;
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        int i = 0;
+        while (i < s.length()) {
+            char ch = s.charAt(i);
+            if (ch != '{') {
+                sb.append(ch);
+                i++;
+                continue;
+            }
+            int j = findClose(s, i);
+            if (j < 0 || ++ctx.steps > MAX_STEPS) {
+                sb.append(ch);
+                i++;
+                continue;
+            }
+            String body = s.substring(i + 1, j);
+            String v = placeholder(body, ctx);
+            if (v == null) {
+                if (ctx.error == null) ctx.error = "{" + body + "}";
+                sb.append('{').append(body).append('}');
+            } else {
+                sb.append(v);
+            }
+            i = j + 1;
+        }
+        ctx.depth--;
+        return sb.toString();
     }
 
     /** True if "a op b" holds: numbers are compared as numbers, anything else as text (ignoring case). */
@@ -305,23 +382,19 @@ final class CustomCommands {
         };
     }
 
-    /**
-     * Result of an {if:...} body (the text after "if:"), or null when malformed.
-     * Form: cond?then|else, where else can be "elif:cond?then|else" or "else:text" or just text.
-     */
-    static String evalIf(String body) {
-        int q = body.indexOf('?');
-        if (q < 0) return null;
-        Matcher c = COND.matcher(body.substring(0, q));
+    /** Body of an if: "cond?then|elif:cond?then|else". Returns null when malformed. */
+    private static String ifBody(String rest, Ctx ctx) {
+        List<String> qs = splitTop(rest, '?', 2);
+        if (qs.size() < 2) return null;
+        Matcher c = COND.matcher(eval(qs.get(0), ctx));
         if (!c.matches()) return null;
-        String rest = body.substring(q + 1);
-        int bar = rest.indexOf('|');
-        String yes = bar < 0 ? rest : rest.substring(0, bar);
-        String no = bar < 0 ? "" : rest.substring(bar + 1);
-        if (compare(c.group(1).trim(), c.group(2), c.group(3).trim())) return yes;
-        if (no.startsWith("elif:")) return evalIf(no.substring(5));
-        if (no.startsWith("else:")) return no.substring(5);
-        return no;
+        List<String> branches = splitTop(qs.get(1), '|', 2);
+        String yes = branches.get(0);
+        String no = branches.size() > 1 ? branches.get(1) : "";
+        if (compare(c.group(1).trim(), c.group(2), c.group(3).trim())) return eval(yes, ctx);
+        if (no.startsWith("elif:")) return ifBody(no.substring(5), ctx);
+        if (no.startsWith("else:")) no = no.substring(5);
+        return eval(no, ctx);
     }
 
     private static String word(String args, int index) {
@@ -332,18 +405,6 @@ final class CustomCommands {
 
     private static String cut(String s) {
         return s.length() > MAX_VALUE ? s.substring(0, MAX_VALUE) : s;
-    }
-
-    private static String pass(String template, Ctx ctx) {
-        Matcher m = PLACEHOLDER.matcher(template);
-        StringBuilder sb = new StringBuilder();
-        while (m.find()) {
-            String p = m.group(1);
-            String rep = resolve(p, ctx);
-            m.appendReplacement(sb, Matcher.quoteReplacement(rep == null ? m.group(0) : rep));
-        }
-        m.appendTail(sb);
-        return sb.toString();
     }
 
     private static Double parseNum(String s) {
@@ -368,106 +429,122 @@ final class CustomCommands {
         }
     }
 
-    private static String getVar(Ctx ctx, boolean persist, String name, String def) {
-        if (!persist) return ctx.vars.getOrDefault(name, def);
+    /** Local variable first, then the stored one with the same name (saved by another command). */
+    private static String getVar(Ctx ctx, boolean storedOnly, String name, String def) {
+        if (!storedOnly && ctx.vars.containsKey(name)) return ctx.vars.get(name);
         if (ctx.vars.containsKey("s:" + name)) return ctx.vars.get("s:" + name);
         if (ctx.dry) return def;
         return hasStored(name) ? stored(name) : def;
     }
 
     /** Value of one placeholder (text between braces), or null when it is not valid. */
-    private static String resolve(String p, Ctx ctx) {
-        switch (p) {
-            case "user": return ctx.user;
-            case "me": return ctx.owner;
-            case "owner": return String.valueOf(ctx.isOwner);
-            case "arg": return word(ctx.args, 0);
-            case "arg2": return word(ctx.args, 1);
-            case "arg3": return word(ctx.args, 2);
-            case "args": return ctx.args;
-            case "target": return word(ctx.args, 0).isEmpty() ? ctx.user : word(ctx.args, 0);
-            case "percent": return ctx.rnd.nextInt(101) + "%";
-            case "time": return LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
-            case "date": return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-            case "count": return ctx.dry ? "1" : String.valueOf(total(ctx.cmd));
-            case "mycount": return ctx.dry ? "1" : String.valueOf(countOf(ctx.cmd, ctx.user));
-            case "br": return "\n";
-            case "area": return ctx.dry ? "Hub" : Area.get();
-            case "top": return ctx.dry ? "steve (3), alex (1)" : top(ctx.cmd);
-            default: break;
-        }
-        Matcher r = RANDOM.matcher(p);
-        if (r.matches()) {
-            long lo = Long.parseLong(r.group(1));
-            long hi = Long.parseLong(r.group(2));
-            if (lo > hi) {
-                long t = lo;
-                lo = hi;
-                hi = t;
+    private static String placeholder(String body, Ctx ctx) {
+        int colon = body.indexOf(':');
+        String name = colon < 0 ? body : body.substring(0, colon);
+        String arg = colon < 0 ? null : body.substring(colon + 1);
+        if (arg == null) {
+            switch (name) {
+                case "user": return ctx.user;
+                case "me": return ctx.owner;
+                case "owner": return String.valueOf(ctx.isOwner);
+                case "arg": return word(ctx.args, 0);
+                case "arg2": return word(ctx.args, 1);
+                case "arg3": return word(ctx.args, 2);
+                case "args": return ctx.args;
+                case "target": return word(ctx.args, 0).isEmpty() ? ctx.user : word(ctx.args, 0);
+                case "percent": return ctx.rnd.nextInt(101) + "%";
+                case "time": return LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
+                case "date": return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                case "count": return ctx.dry ? "1" : String.valueOf(total(ctx.cmd));
+                case "mycount": return ctx.dry ? "1" : String.valueOf(countOf(ctx.cmd, ctx.user));
+                case "top": return ctx.dry ? "steve (3), alex (1)" : top(ctx.cmd);
+                case "br": return "\n";
+                case "area": return ctx.dry ? "Hub" : Area.get();
+                default: break;
             }
-            return String.valueOf(lo + (long) (ctx.rnd.nextDouble() * (hi - lo + 1)));
-        }
-        if (p.startsWith("pick:")) {
-            List<String> opts = new ArrayList<>();
-            for (String s : p.substring(5).split("\\|")) if (!s.isBlank()) opts.add(s.trim());
-            return opts.isEmpty() ? null : opts.get(ctx.rnd.nextInt(opts.size()));
-        }
-        if (p.startsWith("if:")) return evalIf(p.substring(3));
-        if (p.startsWith("math:")) return MathEval.calc(p.substring(5));
-        if (p.startsWith("replace:")) {
-            String[] a = p.substring(8).split("\\|", -1);
-            return a.length == 3 && !a[1].isEmpty() ? a[0].replace(a[1], a[2]) : null;
-        }
-        if (p.startsWith("set:") || p.startsWith("store:")) {
-            boolean persist = p.startsWith("store:");
-            String body = p.substring(persist ? 6 : 4);
-            int eq = body.indexOf('=');
-            if (eq < 1 || !VAR_NAME.matcher(body.substring(0, eq).trim()).matches()) return null;
-            setVar(ctx, persist, body.substring(0, eq).trim(), cut(body.substring(eq + 1)));
-            return "";
-        }
-        if (p.startsWith("inc:") || p.startsWith("sinc:")) {
-            boolean persist = p.startsWith("sinc:");
-            String body = p.substring(persist ? 5 : 4);
-            int eq = body.indexOf('=');
-            String name = (eq < 0 ? body : body.substring(0, eq)).trim();
-            if (!VAR_NAME.matcher(name).matches()) return null;
-            String step = eq < 0 ? "1" : body.substring(eq + 1).trim();
-            if (parseNum(step) == null) return null;
-            Double cur = parseNum(getVar(ctx, persist, name, "0"));
-            setVar(ctx, persist, name, numText((cur == null ? 0 : cur) + parseNum(step)));
-            return "";
-        }
-        if (p.startsWith("get:") || p.startsWith("load:")) {
-            boolean persist = p.startsWith("load:");
-            String body = p.substring(persist ? 5 : 4);
-            int bar = body.indexOf('|');
-            String name = (bar < 0 ? body : body.substring(0, bar)).trim();
-            if (!VAR_NAME.matcher(name).matches()) return null;
-            return getVar(ctx, persist, name, bar < 0 ? "" : body.substring(bar + 1));
-        }
-        if (p.startsWith("until:")) {
-            try {
-                LocalDate d = LocalDate.parse(p.substring(6).trim());
-                return String.valueOf(ChronoUnit.DAYS.between(LocalDate.now(), d));
-            } catch (RuntimeException e) {
-                return null;
+            // {x} is a short form of {get:x}, for a variable that this command sets
+            if (VAR_NAME.matcher(name).matches()) {
+                if (ctx.vars.containsKey(name)) return ctx.vars.get(name);
+                if (ctx.declared.contains(name)) return "";
             }
+            return null;
         }
-        if (p.startsWith("price:") || p.startsWith("sell:")) {
-            String item = p.substring(p.indexOf(':') + 1).trim();
-            if (item.isEmpty()) return null;
-            if (ctx.dry) return "1.2k";
-            try {
-                var products = Hypixel.bazaarProducts();
-                String id = Hypixel.resolveBazaar(products.keySet(), item);
-                if (id == null) return "?";
-                var q = products.getAsJsonObject(id).getAsJsonObject("quick_status");
-                return Hypixel.fmt(q.get(p.startsWith("price:") ? "buyPrice" : "sellPrice").getAsDouble());
-            } catch (Exception e) {
-                return "?";
+        switch (name) {
+            case "if": return ifBody(arg, ctx);
+            case "pick": {
+                List<String> opts = new ArrayList<>();
+                for (String o : splitTop(arg, '|', 0)) if (!o.isBlank()) opts.add(o);
+                return opts.isEmpty() ? null : eval(opts.get(ctx.rnd.nextInt(opts.size())), ctx).trim();
             }
+            case "random": {
+                Matcher r = RANDOM.matcher(eval(arg, ctx).trim());
+                if (!r.matches()) return null;
+                long lo = Long.parseLong(r.group(1));
+                long hi = Long.parseLong(r.group(2));
+                if (lo > hi) {
+                    long t = lo;
+                    lo = hi;
+                    hi = t;
+                }
+                return String.valueOf(lo + (long) (ctx.rnd.nextDouble() * (hi - lo + 1)));
+            }
+            case "math": return MathEval.calc(eval(arg, ctx));
+            case "replace": {
+                List<String> a = splitTop(arg, '|', 0);
+                if (a.size() != 3) return null;
+                String from = eval(a.get(1), ctx);
+                return from.isEmpty() ? null : eval(a.get(0), ctx).replace(from, eval(a.get(2), ctx));
+            }
+            case "set":
+            case "store": {
+                int eq = arg.indexOf('=');
+                if (eq < 1 || !VAR_NAME.matcher(arg.substring(0, eq).trim()).matches()) return null;
+                setVar(ctx, name.equals("store"), arg.substring(0, eq).trim(), cut(eval(arg.substring(eq + 1), ctx)));
+                return "";
+            }
+            case "inc":
+            case "sinc": {
+                int eq = arg.indexOf('=');
+                String var = (eq < 0 ? arg : arg.substring(0, eq)).trim();
+                if (!VAR_NAME.matcher(var).matches()) return null;
+                String stepText = eq < 0 ? "1" : eval(arg.substring(eq + 1), ctx).trim();
+                Double step = parseNum(stepText);
+                if (step == null) return null;
+                boolean persist = name.equals("sinc");
+                Double cur = parseNum(getVar(ctx, persist, var, "0"));
+                setVar(ctx, persist, var, numText((cur == null ? 0 : cur) + step));
+                return "";
+            }
+            case "get":
+            case "load": {
+                List<String> a = splitTop(arg, '|', 2);
+                String var = a.get(0).trim();
+                if (!VAR_NAME.matcher(var).matches()) return null;
+                return getVar(ctx, name.equals("load"), var, a.size() > 1 ? eval(a.get(1), ctx) : "");
+            }
+            case "until": {
+                try {
+                    return String.valueOf(ChronoUnit.DAYS.between(LocalDate.now(), LocalDate.parse(eval(arg, ctx).trim())));
+                } catch (RuntimeException e) {
+                    return null;
+                }
+            }
+            case "price":
+            case "sell": {
+                String item = eval(arg, ctx).trim();
+                if (item.isEmpty()) return null;
+                if (ctx.dry) return "1.2k";
+                try {
+                    var products = Hypixel.bazaarProducts();
+                    String id = Hypixel.resolveBazaar(products.keySet(), item);
+                    if (id == null) return "?";
+                    var q = products.getAsJsonObject(id).getAsJsonObject("quick_status");
+                    return Hypixel.fmt(q.get(name.equals("price") ? "buyPrice" : "sellPrice").getAsDouble());
+                } catch (Exception e) {
+                    return "?";
+                }
+            }
+            default: return null;
         }
-        return null;
     }
 }
