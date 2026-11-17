@@ -18,22 +18,22 @@ final class BuiltIns {
         add("pprice <item>", "Bazaar price of any item (BIN if not in the Bazaar)", false, "pprice");
         add("ah <item>", "Lowest BIN of an item in the Auction House", false, "ah");
         add("mayor", "Current mayor and minister", false, "mayor");
-        add("pets", "Active pet and its level", false, "pets");
-        add("skills", "Skill levels and average", false, "skills");
-        add("slayer", "Levels and XP of the 6 slayers", false, "slayer");
-        add("purse", "Coins in your purse", false, "purse");
+        add("pets [player]", "Active pet and its level", false, "pets");
+        add("skills [player]", "Skill levels and average", false, "skills");
+        add("slayer [player]", "Levels and XP of the 6 slayers", false, "slayer");
+        add("purse [player]", "Coins in your purse", false, "purse");
         add("pcookie", "Booster Cookie Bazaar prices", false, "pcookie");
         add("pkismet", "Kismet Feather Bazaar prices", false, "pkismet");
         add("phandle", "Lowest BIN price of Necron's Handle", false, "phandle");
         add("inflation", "Price index of the old basket (base 100)", false, "inflation");
-        add("comp1-7", "Boss collection progress and master runs missing", false,
+        add("comp1-7 [player]", "Boss collection progress and master runs missing", false,
                 "comp1", "comp2", "comp3", "comp4", "comp5", "comp6", "comp7");
-        add("pb1-7", "Master mode best time of the floor", false,
+        add("pb1-7 [player]", "Master mode best time of the floor", false,
                 "pb1", "pb2", "pb3", "pb4", "pb5", "pb6", "pb7");
-        add("catalvl", "Catacombs level and class levels", false, "catalvl");
-        add("bank", "Bank balance", false, "bank");
-        add("sblvl", "SkyBlock level", false, "sblvl");
-        add("mp", "Magical Power", false, "mp");
+        add("catalvl [player]", "Catacombs level and class levels", false, "catalvl");
+        add("bank [player]", "Bank balance", false, "bank");
+        add("sblvl [player]", "SkyBlock level", false, "sblvl");
+        add("mp [player]", "Magical Power", false, "mp");
         add("role", "Classes of the Party Finder members", false, "role");
         add("rng [drop]", "RNG meter fill of your selected drop (or of the given drop)", false, "rng");
         add("playing_music", "Song playing right now (Last.fm)", false, "playing_music");

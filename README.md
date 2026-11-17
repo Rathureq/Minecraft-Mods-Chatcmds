@@ -47,21 +47,21 @@ Anyone can use them (the answers come from **your** account, stats are **yours**
 | `!pprice <item>` | Bazaar price of any item (`!pprice booster cookie`); if it is not in the Bazaar, the lowest BIN. Shortcuts: `cookie`, `kismet`, `chimera`, `recomb`, `handle` |
 | `!ah <item>` | Lowest BIN of an item whose name contains the text (`!ah necron's handle`), can take several seconds |
 | `!mayor` | Current mayor, his perks and the minister |
-| `!pets` | Active pet and its level |
-| `!skills` | Farming, mining, combat... levels and the average |
-| `!slayer` | Level and XP of the 6 slayers |
-| `!purse` | Coins in your purse |
+| `!pets [player]` | Active pet and its level |
+| `!skills [player]` | Farming, mining, combat... levels and the average |
+| `!slayer [player]` | Level and XP of the 6 slayers |
+| `!purse [player]` | Coins in your purse |
 | `!pcookie` | Booster Cookie Bazaar prices |
 | `!pkismet` | Kismet Feather Bazaar prices |
 | `!precomb` | Recombobulator 3000 Bazaar prices |
 | `!phandle` | Lowest BIN price of Necron's Handle (first call can take several seconds) |
 | `!inflation` | Price index of the old *Consumer Inflation Index* basket, base 100 (see below) |
-| `!comp1` ... `!comp7` | Boss collection of the floor (normal run = 1, master run = 2) and master runs missing for 1000 |
-| `!pb1` ... `!pb7` | Master mode best time of the floor (S+, else S, else any) |
-| `!catalvl` | Catacombs level and class levels |
-| `!bank` | Bank balance (bank API must be enabled on your profile) |
-| `!sblvl` | SkyBlock level |
-| `!mp` | Magical Power |
+| `!comp1` ... `!comp7` [player] | Boss collection of the floor (normal run = 1, master run = 2) and master runs missing for 1000 |
+| `!pb1` ... `!pb7` [player] | Master mode best time of the floor (S+, else S, else any) |
+| `!catalvl [player]` | Catacombs level and class levels |
+| `!bank [player]` | Bank balance (bank API must be enabled on your profile) |
+| `!sblvl [player]` | SkyBlock level |
+| `!mp [player]` | Magical Power |
 | `!role` | Class and class level of the Party Finder members |
 | `!rng [drop]` | Fill rate of your selected RNG meter drop: `x rng / x req, x% fill` (see below) |
 | `!playing_music` | Song you are playing right now (Last.fm) |
@@ -75,6 +75,12 @@ Anyone can use them (the answers come from **your** account, stats are **yours**
 | `!link <lastfm user>` | Link your Last.fm account (same as `/cmd link`, but visible in the chat) |
 | `!mute <player>` | Ignore all the commands of this player. Does not work on yourself |
 | `!unmute <player>` | Stop ignoring them |
+
+**Stats of another player:** the commands marked `[player]` read **your** profile by default, and the profile of
+another player when you add a name: `!mp Steve`, `!catalvl Steve`, `!comp7 Steve`. The answer then starts with the name
+(`Steve - Magical Power : 1200`). The name is turned into a UUID with the Mojang API, then the profile is read with your
+Hypixel key, so the player's own API settings apply (a hidden Skills, Inventory or Banking API gives
+"disabled or empty"). Lookups of other players are limited to 12 per minute to protect your key (300 requests per 5 minutes).
 
 Each command has a 3 second cooldown to avoid spam.
 

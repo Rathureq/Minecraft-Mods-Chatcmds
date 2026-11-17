@@ -25,9 +25,84 @@ final class Hypixel {
 
     private static JsonObject bazaarCache;
     private static long bazaarAt;
-    private static Profile profileCache;
-    private static String profileFor = "";
-    private static long profileAt;
+    /** uuid -> {Profile, time}, a few entries (yours and the players looked up recently). */
+    private static final Map<String, Object[]> profileCache = new HashMap<>();
+    /** player name (lower-case) -> uuid, from Mojang. */
+    private static final Map<String, String> uuidCache = new HashMap<>();
+    /** Times of the recent lookups of other players (rate limit). */
+    private static final java.util.ArrayDeque<Long> lookups = new java.util.ArrayDeque<>();
+    private static final int MAX_LOOKUPS_PER_MINUTE = 12;
+    /** Player whose stats the current worker thread is reading, null = you. */
+    private static final ThreadLocal<String> TARGET = new ThreadLocal<>();
+
+    interface PlayerTask {
+        void run(Out out) throws Exception;
+    }
+
+    /** Prefixes the public answers with the name of the player they are about. */
+    private record NamedOut(Out delegate, String name) implements Out {
+        @Override
+        public void say(String message) {
+            delegate.say(name + " - " + message);
+        }
+
+        @Override
+        public void local(String message) {
+            delegate.local(message);
+        }
+    }
+
+    /**
+     * Runs a stat command for another player (name != null) or for you (name == null).
+     * Other players are looked up with your API key, so they are limited to 12 per minute.
+     */
+    static void asPlayer(String name, Out out, PlayerTask task) throws Exception {
+        if (name == null) {
+            task.run(out);
+            return;
+        }
+        synchronized (Hypixel.class) {
+            long now = System.currentTimeMillis();
+            while (!lookups.isEmpty() && now - lookups.peekFirst() > 60_000) lookups.pollFirst();
+            if (lookups.size() >= MAX_LOOKUPS_PER_MINUTE) {
+                out.local("Too many player lookups, wait a few seconds.");
+                return;
+            }
+            lookups.addLast(now);
+        }
+        TARGET.set(name);
+        try {
+            task.run(new NamedOut(out, name));
+        } finally {
+            TARGET.remove();
+        }
+    }
+
+    /** UUID of a player name (Mojang), cached. Null after telling you when the player does not exist. */
+    private static String uuidOf(String name, Out out) throws Exception {
+        String key = name.toLowerCase(Locale.ROOT);
+        synchronized (Hypixel.class) {
+            String c = uuidCache.get(key);
+            if (c != null) return c;
+        }
+        try {
+            JsonObject o = Http.getJson("https://api.mojang.com/users/profiles/minecraft/" + name, null, null, "Mojang")
+                    .getAsJsonObject();
+            String id = o.has("id") ? o.get("id").getAsString() : null;
+            if (id == null) throw new Http.ApiException("Mojang answered HTTP 404.");
+            synchronized (Hypixel.class) {
+                uuidCache.put(key, id);
+            }
+            return id;
+        } catch (Http.ApiException e) {
+            String m = e.getMessage() == null ? "" : e.getMessage();
+            if (m.contains("HTTP 404") || m.contains("HTTP 204") || m.contains("HTTP 400")) {
+                out.local("Player not found : " + name);
+                return null;
+            }
+            throw e;
+        }
+    }
     private static final Map<String, String[]> binCache = new HashMap<>();
 
     private Hypixel() {}
@@ -35,7 +110,7 @@ final class Hypixel {
     /** Forget cached data (called when the API key changes). */
     static synchronized void invalidate() {
         bazaarCache = null;
-        profileCache = null;
+        profileCache.clear();
         binCache.clear();
     }
 
@@ -70,17 +145,18 @@ final class Hypixel {
             out.local("Hypixel API key missing. Get one on developer.hypixel.net, then type /cmd key <your key>");
             return null;
         }
-        String id = Config.uuid.isEmpty() ? Config.uuidSupplier.get() : Config.uuid;
+        String target = TARGET.get();
+        String id = target != null ? uuidOf(target, out)
+                : (Config.uuid.isEmpty() ? Config.uuidSupplier.get() : Config.uuid);
         if (id == null || id.isEmpty()) {
-            out.local("Could not find your player UUID.");
+            if (target == null) out.local("Could not find your player UUID.");
             return null;
         }
         String plain = id.replace("-", "");
         long now = System.currentTimeMillis();
         synchronized (Hypixel.class) {
-            if (profileCache != null && plain.equals(profileFor) && now - profileAt < PROFILE_TTL) {
-                return profileCache;
-            }
+            Object[] c = profileCache.get(plain);
+            if (c != null && now - (Long) c[1] < PROFILE_TTL) return (Profile) c[0];
         }
 
         JsonObject root = Http.getJson("https://api.hypixel.net/v2/skyblock/profiles?uuid=" + plain,
@@ -97,19 +173,20 @@ final class Hypixel {
             }
         }
         if (selected == null) {
-            out.local("No selected SkyBlock profile found.");
+            out.local(target != null ? "No selected SkyBlock profile found for " + target + "."
+                    : "No selected SkyBlock profile found.");
             return null;
         }
         JsonObject member = Json.obj(Json.obj(selected, "members"), plain);
         if (member == null) {
-            out.local("You were not found in the selected profile.");
+            out.local(target != null ? target + " was not found in the selected profile."
+                    : "You were not found in the selected profile.");
             return null;
         }
         Profile p = new Profile(selected, member);
         synchronized (Hypixel.class) {
-            profileCache = p;
-            profileFor = plain;
-            profileAt = now;
+            if (profileCache.size() >= 30) profileCache.clear();
+            profileCache.put(plain, new Object[] {p, now});
         }
         return p;
     }
@@ -202,7 +279,7 @@ final class Hypixel {
         if (p == null) return;
         JsonObject banking = Json.obj(p.profile(), "banking");
         if (banking == null || !banking.has("balance")) {
-            out.local("Bank API is disabled or empty on your profile.");
+            out.local("Bank API is disabled or empty on this profile.");
             return;
         }
         out.say("Bank : " + fmt(banking.get("balance").getAsDouble()) + " coins");

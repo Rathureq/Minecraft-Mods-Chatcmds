@@ -116,7 +116,7 @@ final class Stats {
         JsonObject cur = Json.obj(p.member(), "currencies");
         double v = Json.num(cur, "coin_purse", Json.num(p.member(), "coin_purse", -1));
         if (v < 0) {
-            out.local("Purse not found in your profile.");
+            out.local("Purse not found in this profile.");
             return;
         }
         out.say("Purse : " + commas(v) + " coins (" + Hypixel.fmt(v) + ")");
@@ -128,7 +128,7 @@ final class Stats {
         JsonObject pd = Json.obj(p.member(), "pets_data");
         JsonArray pets = pd != null && pd.has("pets") && pd.get("pets").isJsonArray() ? pd.getAsJsonArray("pets") : null;
         if (pets == null) {
-            out.local("No pet data in your profile.");
+            out.local("No pet data in this profile.");
             return;
         }
         for (JsonElement e : pets) {
@@ -166,7 +166,7 @@ final class Stats {
             sb.append(Rng.pretty(s)).append(' ').append(skillLevel(xp, table));
         }
         if (n == 0) {
-            out.local("Skill data not found in your profile (the Skills API may be disabled).");
+            out.local("Skill data not found in this profile (the Skills API may be disabled).");
             return;
         }
         out.say("Skills : " + sb + " | average " + String.format(Locale.US, "%.2f", sum / n));
@@ -184,7 +184,7 @@ final class Stats {
         if (p == null) return;
         JsonObject bosses = Json.obj(Json.obj(p.member(), "slayer"), "slayer_bosses");
         if (bosses == null) {
-            out.local("No slayer data in your profile.");
+            out.local("No slayer data in this profile.");
             return;
         }
         JsonObject xpTables = levels().getAsJsonObject("slayer_xp");

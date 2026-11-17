@@ -133,6 +133,14 @@ final class Dispatcher {
         }
     }
 
+    /** Runs a stat command for the player named in the first word of the arguments, or for you. */
+    private void player(String args, String me, Hypixel.PlayerTask task) {
+        String name = Text.firstWord(args);
+        if (name != null && me != null && name.equalsIgnoreCase(me)) name = null;
+        final String target = name;
+        async(out, () -> Hypixel.asPlayer(target, out, task));
+    }
+
     private static String cooldownKey(String cmd) {
         if (cmd.matches("comp[1-7]")) return "comp";
         if (cmd.matches("pb[1-7]")) return "pb";
@@ -161,18 +169,18 @@ final class Dispatcher {
                 else async(out, () -> Hypixel.lowestBin(q, out));
             }
             case "mayor" -> async(out, () -> Hypixel.mayor(out));
-            case "pets" -> async(out, () -> Stats.pets(out));
-            case "skills" -> async(out, () -> Stats.skills(out));
-            case "slayer" -> async(out, () -> Stats.slayer(out));
-            case "purse" -> async(out, () -> Stats.purse(out));
+            case "pets" -> player(args, me, o -> Stats.pets(o));
+            case "skills" -> player(args, me, o -> Stats.skills(o));
+            case "slayer" -> player(args, me, o -> Stats.slayer(o));
+            case "purse" -> player(args, me, o -> Stats.purse(o));
             case "pcookie" -> async(out, () -> Hypixel.bazaarPrices("BOOSTER_COOKIE", out));
             case "pkismet" -> async(out, () -> Hypixel.bazaarPrices("KISMET_FEATHER", out));
             case "phandle" -> async(out, () -> Hypixel.necronHandle(out));
             case "inflation" -> async(out, () -> Inflation.run(out));
-            case "catalvl" -> async(out, () -> Hypixel.cataLevels(out));
-            case "bank" -> async(out, () -> Hypixel.bank(out));
-            case "sblvl" -> async(out, () -> Hypixel.sbLevel(out));
-            case "mp" -> async(out, () -> Hypixel.magicalPower(out));
+            case "catalvl" -> player(args, me, o -> Hypixel.cataLevels(o));
+            case "bank" -> player(args, me, o -> Hypixel.bank(o));
+            case "sblvl" -> player(args, me, o -> Hypixel.sbLevel(o));
+            case "mp" -> player(args, me, o -> Hypixel.magicalPower(o));
             case "role" -> out.say(PartyRoles.summary());
             case "rng" -> rng(args);
             case "playing_music" -> async(out, () -> LastFm.nowPlaying(out));
@@ -197,10 +205,10 @@ final class Dispatcher {
             default -> {
                 if (cmd.matches("comp[1-7]")) {
                     int floor = cmd.charAt(4) - '0';
-                    async(out, () -> Hypixel.completions(floor, out));
+                    player(args, me, o -> Hypixel.completions(floor, o));
                 } else if (cmd.matches("pb[1-7]")) {
                     int floor = cmd.charAt(2) - '0';
-                    async(out, () -> Hypixel.bestTime(floor, out));
+                    player(args, me, o -> Hypixel.bestTime(floor, o));
                 }
             }
         }
