@@ -47,4 +47,17 @@ final class Chat implements Out {
         Minecraft mc = Minecraft.getInstance();
         return mc.player == null ? null : mc.player.getName().getString();
     }
+
+    /** Hex color of the dyed armor piece in the main hand (unverified API: DYED_COLOR). */
+    static String heldColor() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return "Not in a world.";
+        net.minecraft.world.item.ItemStack st = mc.player.getMainHandItem();
+        if (st.isEmpty()) return "Hold an armor piece first.";
+        net.minecraft.world.item.component.DyedItemColor dye =
+                st.get(net.minecraft.core.component.DataComponents.DYED_COLOR);
+        String name = st.getHoverName().getString();
+        if (dye == null) return name + " : no custom color.";
+        return name + " : #" + String.format("%06X", dye.rgb() & 0xFFFFFF);
+    }
 }

@@ -497,17 +497,19 @@ final class CustomCommands {
             }
             case "set":
             case "store": {
-                int eq = arg.indexOf('=');
-                if (eq < 1 || !VAR_NAME.matcher(arg.substring(0, eq).trim()).matches()) return null;
-                setVar(ctx, name.equals("store"), arg.substring(0, eq).trim(), cut(eval(arg.substring(eq + 1), ctx)));
+                List<String> p = splitTop(arg, '=', 2);
+                if (p.size() < 2) return null;
+                String var = eval(p.get(0), ctx).trim();
+                if (!VAR_NAME.matcher(var).matches()) return null;
+                setVar(ctx, name.equals("store"), var, cut(eval(p.get(1), ctx)));
                 return "";
             }
             case "inc":
             case "sinc": {
-                int eq = arg.indexOf('=');
-                String var = (eq < 0 ? arg : arg.substring(0, eq)).trim();
+                List<String> p = splitTop(arg, '=', 2);
+                String var = eval(p.get(0), ctx).trim();
                 if (!VAR_NAME.matcher(var).matches()) return null;
-                String stepText = eq < 0 ? "1" : eval(arg.substring(eq + 1), ctx).trim();
+                String stepText = p.size() < 2 ? "1" : eval(p.get(1), ctx).trim();
                 Double step = parseNum(stepText);
                 if (step == null) return null;
                 boolean persist = name.equals("sinc");
@@ -518,7 +520,7 @@ final class CustomCommands {
             case "get":
             case "load": {
                 List<String> a = splitTop(arg, '|', 2);
-                String var = a.get(0).trim();
+                String var = eval(a.get(0), ctx).trim();
                 if (!VAR_NAME.matcher(var).matches()) return null;
                 return getVar(ctx, name.equals("load"), var, a.size() > 1 ? eval(a.get(1), ctx) : "");
             }

@@ -102,7 +102,6 @@ final class CommandsScreen extends Screen {
         }
         out.add(new Line("-- Slash commands (only on your computer) --", HEADER));
         out.add(new Line("/dh  -  /warp dh", NORMAL));
-        out.add(new Line("/rng [drop]  -  RNG meter fill, Tab completes the drops", NORMAL));
         out.add(new Line("/cmd help  -  keys, accounts, mute, custom commands, aliases, editor", NORMAL));
         return out;
     }

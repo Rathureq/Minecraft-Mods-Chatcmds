@@ -19,7 +19,6 @@ import java.util.function.Function;
  * Client-side slash commands. They never leave your computer (they are not sent to the server).
  *
  *   /dh                                  -> /warp dh
- *   /rng [drop]                          -> same as !rng, with tab completion on the drops
  *   /cmd ...                             -> settings, custom commands, GUI
  */
 final class CmdCommands {
@@ -30,25 +29,7 @@ final class CmdCommands {
             Chat.command("warp dh");
             return 1;
         }));
-        d.register(rngCommand(chat));
         d.register(cmdCommand(chat));
-    }
-
-    // ---------- /rng ----------
-
-    private static LiteralArgumentBuilder<FabricClientCommandSource> rngCommand(Chat chat) {
-        SuggestionProvider<FabricClientCommandSource> drops = suggest(c -> Rng.tokens());
-        return ClientCommands.literal("rng")
-                .executes(c -> {
-                    Dispatcher.async(chat, () -> Rng.run(null, chat));
-                    return 1;
-                })
-                .then(ClientCommands.argument("drop", StringArgumentType.word()).suggests(drops)
-                        .executes(c -> {
-                            String drop = StringArgumentType.getString(c, "drop");
-                            Dispatcher.async(chat, () -> Rng.run(drop, chat));
-                            return 1;
-                        }));
     }
 
     // ---------- /cmd ----------
@@ -308,7 +289,7 @@ final class CmdCommands {
         chat.local("gui  status  reload  key <hypixel key>  lastfmkey <key>  link <lastfm user>");
         chat.local("unit <cm|inch>  mute <player>  unmute <player>");
         chat.local("add <name> <response>  remove <name>  list   (" + CustomCommands.HELP + ")");
-        chat.local("editor [name]  test <name> [args]  censor add|remove|list|defaults  alias <name> <command>|list|remove  rng select|score  find <text>  inflation reset   |   also: /dh  /rng");
+        chat.local("editor [name]  test <name> [args]  censor add|remove|list|defaults  alias <name> <command>|list|remove  rng select|score  find <text>  inflation reset   |   also: /dh");
         return 1;
     }
 

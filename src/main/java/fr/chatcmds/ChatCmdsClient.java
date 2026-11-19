@@ -27,6 +27,7 @@ public class ChatCmdsClient implements ClientModInitializer {
         Config.load();
         CustomCommands.init(dir);
         Rng.init(dir);
+        Usage.init(dir);
         Inflation.init(dir);
         Config.uuidSupplier = () -> {
             Minecraft mc = Minecraft.getInstance();

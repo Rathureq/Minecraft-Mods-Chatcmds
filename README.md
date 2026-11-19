@@ -63,6 +63,8 @@ Anyone can use them (the answers come from **your** account, stats are **yours**
 | `!sblvl [player]` | SkyBlock level |
 | `!mp [player]` | Magical Power |
 | `!role` | Class and class level of the Party Finder members |
+| `!count [cmd]` | Top 5 most used commands, or top 5 users of a command (stored in `config/chatcmds-usage.json`) |
+| `!seymour` | Hex color of the dyed armor piece in your main hand (owner only) |
 | `!rng [drop]` | Fill rate of your selected RNG meter drop: `x rng / x req, x% fill` (see below) |
 | `!playing_music` | Song you are playing right now (Last.fm) |
 | `!music`, `!kayoux`, `!angrelin`, `!roast [name]`, `!metal [name]`, `!credit` | Fun commands |
@@ -104,7 +106,6 @@ Each command has a 3 second cooldown to avoid spam.
 | `/cmd rng select <drop>`, `/cmd rng score <category> <value>` | Set your selected drop / stored score by hand (Tab completes) |
 | `/cmd find <text>` | Looks for a key in your SkyBlock profile (helps to set up `!rng`) |
 | `/cmd inflation reset` | Makes today the new base 100 of `!inflation` |
-| `/rng [drop]` | Same as `!rng`, with tab completion on all drops |
 
 ## Custom commands
 
@@ -187,10 +188,10 @@ or `!` and never sends more than 256 characters.
 ## RNG meter (`!rng`)
 
 `!rng` answers the fill rate of your **selected** drop, for example
-`Bonzo Staff (f1) : 15,900 rng / 31,800 req, 50% fill`. `!rng <drop>` (or `/rng <drop>`) does the same for any drop.
+`Bonzo Staff (f1) : 15,900 rng / 31,800 req, 50% fill`. `!rng <drop>` does the same for any drop.
 The mod ships the list of drops and required scores of the Catacombs floors (F1-M7) and the six slayers
 (data from the NotEnoughUpdates repo, may change with game updates). A drop is written `<category>_<drop>`,
-for example `m7_necron_handle`, `f1_bonzo_staff`, `revenant_foul_flesh`. Press **Tab** after `/rng ` to list them.
+for example `m7_necron_handle`, `f1_bonzo_staff`, `revenant_foul_flesh`. Press **Tab** after `/cmd rng select ` to list them.
 
 Where your selected drop and stored score come from (first found wins):
 1. your SkyBlock profile, if the Hypixel API exposes them (the mod searches for an "rng meter" object;
@@ -221,6 +222,7 @@ All in `.minecraft/config/`:
 | `chatcmds-commands.json` | Your custom commands, their use counters and stored variables |
 | `chatcmds-rng.json` | Selected RNG drop and stored scores |
 | `chatcmds-data.json` | Inflation base and history |
+| `chatcmds-usage.json` | Command usage counts per player (`!count`) |
 
 Manual edits of `chatcmds.json` are picked up automatically.
 

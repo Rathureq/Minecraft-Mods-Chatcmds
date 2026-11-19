@@ -36,6 +36,8 @@ final class BuiltIns {
         add("mp [player]", "Magical Power", false, "mp");
         add("role", "Classes of the Party Finder members", false, "role");
         add("rng [drop]", "RNG meter fill of your selected drop (or of the given drop)", false, "rng");
+        add("count [cmd]", "Top 5 most used commands, or top 5 users of a command", false, "count");
+        add("seymour", "Hex color of the armor piece in your hand", true, "seymour");
         add("playing_music", "Song playing right now (Last.fm)", false, "playing_music");
         add("music", "Best music ever", false, "music");
         add("roast [name]", "Random roast", false, "roast");

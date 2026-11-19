@@ -108,6 +108,7 @@ final class Dispatcher {
         if (builtin == null && custom == null) return;
         if (builtin != null && builtin.ownerOnly() && !isOwner) return;
         if (!cooldownOk(cooldownKey(cmd))) return;
+        Usage.record(cmd, sender);
 
         if (custom != null) {
             final String template = custom;
@@ -183,6 +184,8 @@ final class Dispatcher {
             case "mp" -> player(args, me, o -> Hypixel.magicalPower(o));
             case "role" -> out.say(PartyRoles.summary());
             case "rng" -> rng(args);
+            case "count" -> out.say(Usage.top(args));
+            case "seymour" -> out.say(Chat.heldColor());
             case "playing_music" -> async(out, () -> LastFm.nowPlaying(out));
             case "music" -> out.say("Best music ever : Bad Omen");
             case "kayoux" -> out.say("KAYOUX");
